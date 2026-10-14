@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Compass</title>
+</head>
+<body>
+  <h1>コンパス</h1>
+  <p id="direction">取得中...</p>
+
+  <button onclick="requestPermission()">開始</button>
+
+  <script src="{{ url_for('static', filename='compass.js') }}"></script>
+</body>
+</html>

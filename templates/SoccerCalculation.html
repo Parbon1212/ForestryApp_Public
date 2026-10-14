@@ -1,0 +1,1995 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Geo Field Studio</title>
+
+  <style>
+    /* ===== CSS VARIABLES ===== */
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --surface2: #21262d;
+      --border: #30363d;
+      --accent: #3fb950;
+      --accent2: #58a6ff;
+      --warn: #f0883e;
+      --danger: #f85149;
+      --text: #e6edf3;
+      --text2: #8b949e;
+      --radius: 10px;
+      --transition: 0.35s cubic-bezier(.4,0,.2,1);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Noto Sans JP', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+      overflow-x: hidden;
+    }
+
+    /* ===== BACKGROUND TEXTURE ===== */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 20% 10%, rgba(63,185,80,.07) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 80% 80%, rgba(88,166,255,.05) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ===== SCREENS ===== */
+    .screen {
+      position: fixed; top: 54px; left: 0; right: 0; bottom: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 24px 20px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--transition);
+      overflow-y: auto;
+      z-index: 1;
+    }
+    .screen.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    /* ===== CARD ===== */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px 28px;
+      width: 100%;
+      max-width: 480px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.4);
+    }
+
+    /* ===== STEP INDICATOR ===== */
+    .step-indicator {
+      display: flex; gap: 6px;
+      justify-content: center;
+      margin-bottom: 28px;
+    }
+    .step-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--border);
+      transition: background .3s, width .3s;
+    }
+    .step-dot.done { background: var(--accent); }
+    .step-dot.current {
+      background: var(--accent);
+      width: 24px; border-radius: 4px;
+    }
+
+    /* ===== TYPOGRAPHY ===== */
+    .screen-title {
+      font-size: 13px; font-weight: 700;
+      letter-spacing: .12em; text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 6px;
+    }
+    h2 {
+      font-size: 22px; font-weight: 700;
+      line-height: 1.3;
+      margin-bottom: 6px;
+    }
+    .screen-desc {
+      font-size: 13px; color: var(--text2);
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+
+    /* ===== INPUTS ===== */
+    .field { margin-bottom: 16px; }
+    .field label {
+      display: block;
+      font-size: 12px; font-weight: 700;
+      letter-spacing: .05em; text-transform: uppercase;
+      color: var(--text2);
+      margin-bottom: 6px;
+    }
+    input[type="number"], input[type="text"], select {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 14px;
+      font-size: 16px;
+      font-family: 'DM Mono', monospace;
+      color: var(--text);
+      outline: none;
+      transition: border-color .2s;
+    }
+    input:focus, select:focus { border-color: var(--accent2); }
+    select { font-family: 'Noto Sans JP', sans-serif; font-size: 15px; }
+
+    /* ===== RADIO GROUP ===== */
+    .radio-group { display: flex; flex-direction: column; gap: 10px; }
+    .radio-option {
+      display: flex; align-items: center; gap: 12px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      cursor: pointer;
+      transition: border-color .2s, background .2s;
+    }
+    .radio-option:has(input:checked) {
+      border-color: var(--accent2);
+      background: rgba(88,166,255,.06);
+    }
+    .radio-option input[type="radio"] { accent-color: var(--accent2); width: 18px; height: 18px; }
+    .radio-option .opt-label { font-size: 14px; font-weight: 700; }
+    .radio-option .opt-desc { font-size: 12px; color: var(--text2); margin-top: 2px; }
+
+    /* ===== BUTTONS ===== */
+    .btn {
+      display: block; width: 100%;
+      padding: 14px;
+      border: none; border-radius: var(--radius);
+      font-size: 15px; font-weight: 700;
+      font-family: 'Noto Sans JP', sans-serif;
+      cursor: pointer;
+      transition: opacity .2s, transform .1s;
+    }
+    .btn:active { transform: scale(.98); }
+    .btn:disabled { opacity: .4; cursor: not-allowed; }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #0d1117;
+    }
+    .btn-secondary {
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      margin-top: 10px;
+    }
+    .btn-danger {
+      background: var(--danger);
+      color: #fff;
+    }
+    .btn-warn {
+      background: var(--warn);
+      color: #0d1117;
+    }
+
+    /* ===== BATTERY DISPLAY ===== */
+    #battery-result {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      text-align: center;
+      margin: 16px 0;
+      display: none;
+    }
+    #battery-result .batt-time {
+      font-size: 36px; font-weight: 700;
+      font-family: 'DM Mono', monospace;
+      color: var(--accent);
+    }
+    #battery-result .batt-label { font-size: 12px; color: var(--text2); margin-top: 4px; }
+
+    /* ===== STATUS / INFO BOX ===== */
+    .info-box {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      font-size: 13px;
+      color: var(--text2);
+      margin: 12px 0;
+      line-height: 1.7;
+    }
+    .info-box.success { border-color: var(--accent); color: var(--accent); }
+    .info-box.error   { border-color: var(--danger); color: var(--danger); }
+    .info-box.warn    { border-color: var(--warn);   color: var(--warn); }
+
+    /* ===== GNSS STATUS BADGE ===== */
+    .fix-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 12px; font-weight: 700;
+      color: #fff;
+    }
+
+    /* ===== PROGRESS BAR ===== */
+    .progress-track {
+      width: 100%; height: 4px;
+      background: var(--surface2);
+      border-radius: 2px;
+      overflow: hidden;
+      margin: 8px 0;
+    }
+    .progress-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 2px;
+      transition: width .4s ease;
+    }
+
+    /* ===== BACK BUTTON ===== */
+    .btn-back {
+      background: none;
+      border: none;
+      color: var(--text2);
+      font-size: 13px;
+      font-family: 'Noto Sans JP', sans-serif;
+      cursor: pointer;
+      padding: 0 0 16px 0;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: color .2s;
+      width: auto;
+    }
+    .btn-back:hover { color: var(--text); }
+
+    /* ===== TOP BAR ===== */
+    #top-bar {
+      position: fixed; top: 0; left: 0; right: 0;
+      z-index: 300;
+      height: 54px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.35);
+    }
+    .tb-cell {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 2px;
+    }
+    .tb-cell.tb-center { align-items: center; }
+    .tb-cell.tb-right  { align-items: flex-end; }
+    .tb-label {
+      font-size: 9px; font-weight: 700;
+      letter-spacing: .08em; text-transform: uppercase;
+      color: var(--text2);
+    }
+
+    #shutdown-btn {
+      background: var(--danger);
+      border: none;
+      border-radius: 7px;
+      padding: 5px 10px;
+      font-size: 12px; font-weight: 700;
+      font-family: 'Noto Sans JP', sans-serif;
+      color: #fff;
+      cursor: pointer;
+      display: flex; align-items: center; gap: 4px;
+      transition: opacity .2s, transform .1s;
+      letter-spacing: .03em;
+      white-space: nowrap;
+    }
+    #shutdown-btn:hover { opacity: .85; }
+    #shutdown-btn:active { transform: scale(.96); }
+
+    #battery-bar {
+      font-size: 13px; font-weight: 700;
+      font-family: 'DM Mono', monospace;
+      color: var(--accent);
+      display: flex; align-items: center; gap: 5px;
+      white-space: nowrap;
+    }
+    #battery-bar.warn   { color: var(--warn); }
+    #battery-bar.danger { color: var(--danger); }
+
+    #gnss-mini {
+      font-size: 12px;
+      font-family: 'DM Mono', monospace;
+      color: var(--text2);
+      display: flex; align-items: center;
+    }
+
+    /* ===== DISTANCE BOX (fixed bottom-right, non-draggable) ===== */
+    #distance {
+      position: fixed;
+      font-size: 13px;
+      text-align: center;
+      bottom: 20px; right: 20px;
+      width: 220px;
+      max-height: 55vh;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px;
+      z-index: 9999;
+      box-sizing: border-box;
+      overflow: auto;
+      touch-action: pan-y;
+      cursor: default;
+      display: none;
+      box-shadow: 0 8px 32px rgba(0,0,0,.5);
+    }
+    /* ドラッグハンドルは非表示 */
+    #distance-handle { display: none; }
+
+    /* ===== target_view ===== */
+    #target_view {
+      font-size: 11px;
+      font-family: 'DM Mono', monospace;
+      white-space: pre-wrap;
+      color: var(--text2);
+      padding: 0 16px 8px;
+    }
+
+    /* ===== POINT LIST ===== */
+    .point-list {
+      max-height: 200px;
+      overflow-y: auto;
+      margin: 12px 0;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+    .point-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 12px;
+      font-size: 12px;
+      font-family: 'DM Mono', monospace;
+      border-bottom: 1px solid var(--border);
+      color: var(--text2);
+    }
+    .point-item:last-child { border-bottom: none; }
+    .point-item.reached { color: var(--accent); }
+    .point-item .p-num {
+      font-weight: 700; min-width: 28px;
+      color: var(--text2);
+    }
+    .point-item.reached .p-num { color: var(--accent); }
+    .p-check { margin-left: auto; }
+
+    /* ===== ARRIVAL LOG ===== */
+    .log-entry {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-bottom: 8px;
+      font-size: 12px;
+      font-family: 'DM Mono', monospace;
+      color: var(--text2);
+      line-height: 1.7;
+    }
+    .log-entry .log-num {
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    /* ===== HIDDEN ===== */
+    .hidden { display: none !important; }
+
+    /* ===== SPINNER ===== */
+    .spinner {
+      display: inline-block;
+      width: 20px; height: 20px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ===== DIRECTION CANVAS ===== */
+    #direction-arrow { display: block; margin: 0 auto; }
+
+    /* ===== SCROLLBAR ===== */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: var(--surface2); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    /* ===== MOBILE ADJUST ===== */
+    @media (max-width: 480px) {
+      .card { padding: 24px 18px; }
+      h2 { font-size: 19px; }
+    }
+
+    /* ===== position_view inside distance box ===== */
+    #position_view {
+      font-size: 12px;
+      font-family: 'DM Mono', monospace;
+      white-space: pre-wrap;
+      text-align: left;
+      padding: 6px 12px;
+      color: var(--text);
+    }
+
+    /* ===== nav button row ===== */
+    .nav-row {
+      display: flex; gap: 8px;
+      margin-top: 10px;
+    }
+    .nav-row .btn { flex: 1; font-size: 13px; padding: 10px; }
+
+    /* input-error */
+    input.input-error { border-color: var(--danger) !important; }
+  </style>
+
+  <!-- Google Maps は削除済み -->
+</head>
+
+<body>
+
+<!-- ========== TOP BAR ========== -->
+<div id="top-bar">
+  <div class="tb-cell">
+    <button id="shutdown-btn" onclick="shutdownPi()" title="Raspberry Pi をシャットダウン">
+      ⏻ 電源OFF
+    </button>
+  </div>
+  <div class="tb-cell tb-center">
+    <div class="tb-label">電源残り時間</div>
+    <div id="battery-bar">🔋 <span id="battery-bar-time">--:--:--</span></div>
+  </div>
+  <div class="tb-cell tb-right" style="flex-direction:row; justify-content:flex-end; align-items:center; gap:8px;">
+    <button id="debug-toggle-btn" onclick="toggleDebugPanel()" style="padding:4px 8px; font-size:11px; font-family:'DM Mono',monospace; background:var(--surface2); border:1px solid var(--border); border-radius:6px; color:var(--text2); cursor:pointer;">詳細</button>
+    <div style="display:flex; flex-direction:column; align-items:flex-end; gap:2px;">
+      <div class="tb-label">通信品質</div>
+      <div id="gnss-mini"><span id="gnss-mini-status">初期化中</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== SCREEN 1: BATTERY ========== -->
+<div class="screen active" id="screen-1">
+  <div class="step-indicator" id="steps-1"></div>
+  <div class="card">
+    <div class="screen-title">Step 1 / 8</div>
+    <h2>🔋 バッテリー残量</h2>
+    <p class="screen-desc">現在のバッテリー残量を入力すると、残り稼働可能時間を表示します。（最大稼働時間: 8時間）</p>
+
+    <div class="field">
+      <label>バッテリー残量 (%)</label>
+      <input type="number" id="battery-pct" min="0" max="100" step="1" placeholder="例: 75">
+    </div>
+
+    <div id="battery-result">
+      <div class="batt-time" id="battery-time-display">--:--</div>
+      <div class="batt-label">残り稼働可能時間</div>
+    </div>
+
+    <button class="btn btn-secondary" id="btn-resume" onclick="resumeSession()">
+      ⟳ 前回の作業を復帰する
+    </button>
+    <div id="resume-status" class="info-box hidden"></div>
+
+    <button class="btn btn-primary" id="btn-1-next" onclick="startBatteryCountdown(); goToScreen(2)" style="margin-top:16px;" disabled>
+      次へ →
+    </button>
+</div>
+</div>
+<div class="screen" id="screen-2">
+  <div class="step-indicator" id="steps-2"></div>
+  <div class="card">
+    <button class="btn-back" onclick="goToScreen(1)">← 前の画面へ</button>
+    <div class="screen-title">Step 2 / 8</div>
+    <h2>🧭 コンパス許可</h2>
+    <p class="screen-desc">方向矢印表示のため、デバイスのコンパス（方位センサー）へのアクセスを許可してください。</p>
+
+    <div id="compass-status" class="info-box">コンパスの許可が必要です</div>
+
+    <button class="btn btn-primary" id="btn-compass" onclick="requestCompass()">
+      コンパスを有効化する
+    </button>
+    <button class="btn btn-secondary" onclick="goToScreen(3)">スキップ（PCなど）</button>
+</div>
+</div>
+
+<!-- ========== SCREEN 3: GNSS START ========== -->
+<div class="screen" id="screen-3">
+  <div class="step-indicator" id="steps-3"></div>
+  <div class="card">
+    <button class="btn-back" onclick="goToScreen(2)">← 前の画面へ</button>
+    <div class="screen-title">Step 3 / 8</div>
+    <h2>📡 現在地の取得</h2>
+    <p class="screen-desc">GNSSレシーバーからの位置情報の受信を開始します。</p>
+
+    <div id="gnss-start-status" class="info-box">まだ開始していません</div>
+    <div id="gnss-live" class="info-box hidden"></div>
+
+    <button class="btn btn-primary" id="btn-start-gnss" onclick="startGNSS()">
+      現在地の取得を開始
+    </button>
+    <button class="btn btn-secondary" id="btn-3-next" onclick="goToScreen(4)" disabled>
+      次へ →
+    </button>
+</div>
+</div>
+
+<!-- ========== SCREEN 4: BASE POINT ========== -->
+<div class="screen" id="screen-4">
+  <div class="step-indicator" id="steps-4"></div>
+  <div class="card">
+    <button class="btn-back" onclick="goToScreen(3)">← 前の画面へ</button>
+    <div class="screen-title">Step 4 / 8</div>
+    <h2>📍 基準点（CP）の設定</h2>
+    <p class="screen-desc">植林の基準となる地点を設定します。</p>
+
+    <div class="field">
+      <label>設定方法</label>
+      <select id="cp_mode" autocomplete="off" onchange="toggleCPMode()">
+        <option value="auto" data-desc="GNSSで現在地を測定して基準点に設定" selected>現在地から取得（10秒平均）</option>
+        <option value="manual" data-desc="既知の座標を直接入力">緯度経度を手入力</option>
+        <option value="plan" data-desc="植林座標の JSON を読み込んでナビへ直行">計画ファイルから読み込む</option>
+      </select>
+      <div id="cp_mode_desc" style="font-size:12px; color:var(--text2); margin-top:6px;">GNSSで現在地を測定して基準点に設定</div>
+    </div>
+
+    <!-- PLAN MODE -->
+    <div id="cp-plan" class="hidden">
+      <button class="btn btn-secondary" style="margin-top:0;" onclick="document.getElementById('plan-file').click()">
+        📂 ファイルを選ぶ（JSON）
+      </button>
+      <input type="file" id="plan-file" accept=".json,application/json" class="hidden" onchange="loadPlanFile(this)">
+      <div id="plan-status" class="info-box hidden"></div>
+      <div id="plan-select-wrap" class="field hidden">
+        <label>作業する区画</label>
+        <select id="plan-plot-select"></select>
+      </div>
+      <button class="btn btn-primary hidden" id="btn-plan-start" onclick="startPlanPlot(Number(document.getElementById('plan-plot-select').value))">
+        この区画でナビ開始 →
+      </button>
+    </div>
+
+    <!-- AUTO MODE -->
+    <div id="cp-auto">
+      <button class="btn btn-primary" id="get_cp_button" onclick="getCPPosition()">
+        現在地を取得（10秒平均）
+      </button>
+      <div id="cp_status" class="info-box hidden"></div>
+    </div>
+
+    <!-- MANUAL MODE -->
+    <div id="cp-manual" class="hidden">
+      <div class="field">
+        <label>貼付け（緯度, 経度）</label>
+        <input type="text" id="cp_paste" placeholder="32.87..., 130.74..." onblur="tryPasteCP()">
+      </div>
+      <div class="field">
+        <label>CP 緯度</label>
+        <input type="text" id="cp_lat" inputmode="decimal" readonly>
+      </div>
+      <div class="field">
+        <label>CP 経度</label>
+        <input type="text" id="cp_lon" inputmode="decimal" readonly>
+      </div>
+      <button class="btn btn-secondary" onclick="validateAndLockCP()">座標を確定</button>
+      <div id="cp_manual_status" class="info-box hidden"></div>
+    </div>
+
+
+
+    <button class="btn btn-primary" id="btn-4-next" onclick="goToScreen(5)" disabled style="margin-top:16px;">
+      次へ →
+    </button>
+</div>
+</div>
+
+<!-- ========== SCREEN 5: TREE PARAMS ========== -->
+<div class="screen" id="screen-5">
+  <div class="step-indicator" id="steps-5"></div>
+  <div class="card">
+    <button class="btn-back" onclick="goToScreen(4)">← 前の画面へ</button>
+    <div class="screen-title">Step 5 / 8</div>
+    <h2>🌲 植林パラメータ</h2>
+    <p class="screen-desc">植林間隔と本数を指定してください。</p>
+
+    <div id="tree-preview-wrap" style="margin-bottom:20px;">
+      <canvas id="tree-preview-canvas" width="260" height="220" style="display:block; margin:0 auto; max-width:100%;"></canvas>
+      <div id="tree-preview-info" style="font-size:12px; color:var(--text2); text-align:center; margin-top:8px; line-height:1.6;"></div>
+    </div>
+
+    <div class="field">
+      <label>縦方向</label>
+      <div style="display:flex; gap:10px;">
+        <div style="flex:1;">
+          <div style="font-size:11px; color:var(--text2); margin-bottom:4px;">間隔 (m)</div>
+          <input type="number" id="tree_space_height" step="0.1" min="0.1" placeholder="例: 2.0">
+        </div>
+        <div style="flex:1;">
+          <div style="font-size:11px; color:var(--text2); margin-bottom:4px;">本数</div>
+          <input type="number" id="tree_height" step="1" min="1" placeholder="例: 10">
+        </div>
+      </div>
+    </div>
+    <div class="field">
+      <label>横方向</label>
+      <div style="display:flex; gap:10px;">
+        <div style="flex:1;">
+          <div style="font-size:11px; color:var(--text2); margin-bottom:4px;">間隔 (m)</div>
+          <input type="number" id="tree_space_width" step="0.1" min="0.1" placeholder="例: 2.0">
+        </div>
+        <div style="flex:1;">
+          <div style="font-size:11px; color:var(--text2); margin-bottom:4px;">本数</div>
+          <input type="number" id="tree_width" step="1" min="1" placeholder="例: 10">
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" id="btn-5-next" onclick="validateTreeParams()" style="margin-top:8px;">
+      次へ →
+    </button>
+</div>
+</div>
+
+<!-- ========== SCREEN 6: AZIMUTH ========== -->
+<div class="screen" id="screen-6">
+  <div class="step-indicator" id="steps-6"></div>
+  <div class="card">
+    <button class="btn-back" onclick="goToScreen(5)">← 前の画面へ</button>
+    <div class="screen-title">Step 6 / 8</div>
+    <h2>🧭 方位角の指定</h2>
+    <p class="screen-desc">植林ポイントを配置する方向（方位角）を決定します。</p>
+
+    <div class="radio-group" style="margin-bottom:16px;">
+      <label class="radio-option">
+        <input type="radio" id="mode_ref" name="azimuth_mode" value="ref" checked onchange="toggleAzimuthInput()">
+        <div>
+          <div class="opt-label">参照点を現在地で指定</div>
+          <div class="opt-desc">現在地をその場で測定して方位角を算出</div>
+        </div>
+      </label>
+      <label class="radio-option">
+        <input type="radio" id="mode_manual" name="azimuth_mode" value="manual" onchange="toggleAzimuthInput()">
+        <div>
+          <div class="opt-label">方位角を手入力</div>
+          <div class="opt-desc">0〜360° で直接入力</div>
+        </div>
+      </label>
+    </div>
+
+    <!-- REF MODE -->
+    <div id="ref-inputs">
+      <button class="btn btn-primary" id="get_ref_button" onclick="getRefPosition()">
+        参照点の位置情報を取得
+      </button>
+      <div class="field" style="margin-top:12px;">
+        <label>参照点 緯度</label>
+        <input type="text" id="ref_lat" readonly>
+      </div>
+      <div class="field">
+        <label>参照点 経度</label>
+        <input type="text" id="ref_lon" readonly>
+      </div>
+    </div>
+
+    <!-- MANUAL AZIMUTH -->
+    <div id="manual-azimuth-input" class="hidden">
+      <div class="field">
+        <label>方位角 (度)</label>
+        <input type="number" id="manual_azimuth" min="0" max="360" step="0.1" placeholder="例: 0.0 (北)">
+      </div>
+    </div>
+
+    <div id="azimuth-status" class="info-box hidden"></div>
+
+    <button class="btn btn-primary" id="btn-calculate" onclick="calculatePoints()" style="margin-top:8px;">
+      植林ポイントを決定して次へ →
+    </button>
+</div>
+</div>
+
+<!-- ========== SCREEN 7: NAVIGATION ========== -->
+<div class="screen" id="screen-7" style="gap:0; padding:16px 20px 32px; justify-content:space-between;">
+  <div class="step-indicator" id="steps-7"></div>
+
+  <!-- 矢印 + 距離(cm) -->
+  <div style="display:flex; flex-direction:column; align-items:center; flex:1; justify-content:center; gap:10px;">
+    <canvas id="direction-arrow" width="220" height="220"></canvas>
+    <div id="nav-dist-cm" style="font-size:52px; font-weight:700; font-family:'DM Mono',monospace; color:var(--accent); line-height:1;">--</div>
+    <div style="font-size:14px; color:var(--text2); letter-spacing:.05em;">cm</div>
+  </div>
+
+  <!-- 進捗 -->
+  <div style="width:100%; max-width:400px; margin:0 auto 16px;">
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px; justify-content:center;">
+      <span style="font-size:13px; color:var(--text2);">進捗</span>
+      <span id="nav-progress-text" style="font-size:13px; font-family:'DM Mono',monospace;">0 / 0</span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="nav-progress-bar" style="width:0%"></div>
+    </div>
+  </div>
+
+  <!-- 前へ戻る + スキップ + DBG -->
+  <div class="nav-row" style="width:100%; max-width:400px; margin:0 auto 12px;">
+    <button class="btn btn-secondary" id="prev_point_button" onclick="goBackToPreviousPoint()" disabled>← 前へ戻る</button>
+    <button class="btn btn-secondary" id="skip_point_button" onclick="skipCurrentPoint()" disabled>スキップ →</button>
+  </div>
+
+  <!-- 完了 -->
+  <button class="btn btn-primary" id="btn-7-next" onclick="goToScreen(8)" disabled style="width:100%; max-width:400px; margin:0 auto; display:block;">
+    完了
+  </button>
+</div>
+
+<!-- ========== SCREEN 8: FINISH ========== -->
+<div class="screen" id="screen-8">
+  <div class="step-indicator" id="steps-8"></div>
+  <div class="card">
+    <button class="btn-back" onclick="goToScreen(7)">← 前の画面へ</button>
+    <div class="screen-title">Step 8 / 8</div>
+    <h2>🎉 作業完了</h2>
+    <p class="screen-desc">すべての植林ポイントへの誘導が完了しました。到着ログをダウンロードできます。</p>
+
+    <div id="finish-summary" class="info-box success"></div>
+
+    <button class="btn btn-primary" onclick="downloadArrivalsCSV()" style="margin-top:16px;">
+      📥 到着ログ CSV をダウンロード
+    </button>
+    <button class="btn btn-secondary" onclick="clearArrivals()">
+      🗑️ 到着ログをクリア
+    </button>
+  </div>
+</div>
+
+<!-- ========== FLOATING DISTANCE BOX ========== -->
+<div id="distance">
+  <!-- filled by initializeDistanceView() -->
+</div>
+
+<!-- ========== GNSS MONITOR (hidden, used by script) ========== -->
+<pre id="target_view" style="display:none;"></pre>
+<div id="status" style="display:none;"></div>
+
+<!-- ========== DEBUG PANEL ========== -->
+<div id="debug-panel" style="
+  display:none; position:fixed; top:60px; left:8px; right:8px;
+  max-height:60vh; overflow-y:auto; z-index:99999;
+  background:#0d1117; border:1.5px solid #f85149;
+  border-radius:12px; font-family:'DM Mono',monospace; font-size:11px;
+  color:#e6edf3; box-shadow:0 8px 32px rgba(248,81,73,.35);
+">
+  <div style="
+    display:flex; align-items:center; justify-content:space-between;
+    padding:8px 12px; border-bottom:1px solid #30363d;
+    background:#161b22; border-radius:12px 12px 0 0;
+  ">
+    <span style="font-weight:700; color:#f85149; letter-spacing:.06em;">🐛 DEBUG PANEL — STEP7</span>
+    <button onclick="document.getElementById('debug-panel').style.display='none'"
+      style="background:#f85149;border:none;border-radius:6px;color:#fff;
+             padding:2px 8px;font-size:12px;cursor:pointer;font-weight:700;">✕</button>
+  </div>
+
+  <!-- State grid -->
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:1px; background:#30363d; border-bottom:1px solid #30363d;">
+    <div style="background:#0d1117; padding:8px 10px;">
+      <div style="color:#8b949e; font-size:10px; margin-bottom:2px;">WATCH LOOP</div>
+      <div id="dbg-watch" style="color:#3fb950;">--</div>
+    </div>
+    <div style="background:#0d1117; padding:8px 10px;">
+      <div style="color:#8b949e; font-size:10px; margin-bottom:2px;">IN-FLIGHT</div>
+      <div id="dbg-inflight">--</div>
+    </div>
+    <div style="background:#0d1117; padding:8px 10px;">
+      <div style="color:#8b949e; font-size:10px; margin-bottom:2px;">POINT IDX / TOTAL</div>
+      <div id="dbg-idx">--</div>
+    </div>
+    <div style="background:#0d1117; padding:8px 10px;">
+      <div style="color:#8b949e; font-size:10px; margin-bottom:2px;">COMPASS °</div>
+      <div id="dbg-compass">--</div>
+    </div>
+    <div style="background:#0d1117; padding:8px 10px;">
+      <div style="color:#8b949e; font-size:10px; margin-bottom:2px;">CURRENT LAT</div>
+      <div id="dbg-lat">--</div>
+    </div>
+    <div style="background:#0d1117; padding:8px 10px;">
+      <div style="color:#8b949e; font-size:10px; margin-bottom:2px;">CURRENT LON</div>
+      <div id="dbg-lon">--</div>
+    </div>
+    <div style="background:#0d1117; padding:8px 10px;">
+      <div style="color:#8b949e; font-size:10px; margin-bottom:2px;">LAST DIST (m)</div>
+      <div id="dbg-dist">--</div>
+    </div>
+    <div style="background:#0d1117; padding:8px 10px;">
+      <div style="color:#8b949e; font-size:10px; margin-bottom:2px;">THRESHOLD (m)</div>
+      <div id="dbg-thresh">--</div>
+    </div>
+    <div style="background:#0d1117; padding:8px 10px;">
+      <div style="color:#8b949e; font-size:10px; margin-bottom:2px;">FIX QUALITY</div>
+      <div id="dbg-fix">--</div>
+    </div>
+    <div style="background:#0d1117; padding:8px 10px;">
+      <div style="color:#8b949e; font-size:10px; margin-bottom:2px;">LAST POLL AGO</div>
+      <div id="dbg-poll-age">--</div>
+    </div>
+    <div style="background:#0d1117; padding:8px 10px;">
+      <div style="color:#8b949e; font-size:10px; margin-bottom:2px;">CPU TEMP</div>
+      <div id="dbg-temp">--</div>
+    </div>
+    <div style="background:#0d1117; padding:8px 10px;">
+      <div style="color:#8b949e; font-size:10px; margin-bottom:2px;">GNSS接続</div>
+      <div id="dbg-gnss-conn">--</div>
+    </div>
+  </div>
+
+  <!-- Target coords -->
+  <div style="padding:8px 10px; border-bottom:1px solid #30363d;">
+    <div style="color:#8b949e; font-size:10px; margin-bottom:2px;">TARGET POINT COORDS [lon, lat]</div>
+    <div id="dbg-target" style="color:#58a6ff;">--</div>
+  </div>
+
+  <!-- Log -->
+  <div style="padding:8px 10px 4px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+      <span style="color:#8b949e; font-size:10px;">EVENT LOG (最新20件)</span>
+      <button onclick="debugClearLog()"
+        style="background:#21262d;border:1px solid #30363d;border-radius:4px;
+               color:#8b949e;font-size:10px;padding:1px 6px;cursor:pointer;">CLR</button>
+    </div>
+    <div id="dbg-log" style="max-height:120px; overflow-y:auto; color:#8b949e; line-height:1.7;"></div>
+  </div>
+</div>
+
+
+<!-- ========== HIDDEN FORM FIELDS (used by script.js logic) ========== -->
+<!-- shape is fixed to "tree" -->
+<input type="hidden" id="shape" value="tree">
+<!-- threshold fixed to high precision -->
+<input type="hidden" id="threshold-selector" value="high">
+
+<script>
+// ===== SESSION PERSISTENCE =====
+const SESSION_KEY = 'gfs_session_v1';
+
+function saveSession(patch) {
+  let s = {};
+  try { s = JSON.parse(localStorage.getItem(SESSION_KEY) || '{}'); } catch {}
+  Object.assign(s, patch);
+  localStorage.setItem(SESSION_KEY, JSON.stringify(s));
+}
+
+function loadSession() {
+  try { return JSON.parse(localStorage.getItem(SESSION_KEY) || '{}'); } catch { return {}; }
+}
+
+// ===== STEP DOTS =====
+function renderStepDots() {
+  const total = 8;
+  for (let s = 1; s <= total; s++) {
+    const el = document.getElementById(`steps-${s}`);
+    if (!el) continue;
+    el.innerHTML = '';
+    for (let i = 1; i <= total; i++) {
+      const d = document.createElement('div');
+      d.className = 'step-dot' + (i < s ? ' done' : i === s ? ' current' : '');
+      el.appendChild(d);
+    }
+  }
+}
+// ===== SCREEN TRANSITION =====
+let currentScreen = 1;
+function goToScreen(n) {
+  const prev = document.getElementById(`screen-${currentScreen}`);
+  const next = document.getElementById(`screen-${n}`);
+  if (!next) return;
+  // STEP7 を離れるときは電力モニタのポーリングを止める
+  if (currentScreen === 7 && n !== 7 && typeof stopPowerMonitor === 'function') {
+    stopPowerMonitor();
+  }
+  prev.classList.remove('active');
+  // fade: wait 1 frame then activate
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      next.classList.add('active');
+    });
+  });
+  currentScreen = n;
+  saveSession({ currentScreen: n });
+
+  document.getElementById('distance').style.display = 'none';
+
+  if (n === 7) {
+    startNavigation();
+  }
+  if (n === 8) {
+    renderFinishScreen();
+  }
+}
+
+// ===== BATTERY COUNTDOWN =====
+let batteryEndTime = null;
+let batteryCountdownInterval = null;
+
+function startBatteryCountdown() {
+  const pct = parseFloat(document.getElementById('battery-pct').value);
+  if (isNaN(pct) || pct < 0 || pct > 100) return;
+  const totalMs = (pct / 100) * 8 * 60 * 60 * 1000;
+  batteryEndTime = Date.now() + totalMs;
+  saveSession({ batteryEndTime });
+  if (batteryCountdownInterval) clearInterval(batteryCountdownInterval);
+  batteryCountdownInterval = setInterval(updateBatteryBar, 1000);
+  updateBatteryBar();
+}
+
+function updateBatteryBar() {
+  if (!batteryEndTime) return;
+  const remaining = Math.max(0, batteryEndTime - Date.now());
+  const h = Math.floor(remaining / 3600000);
+  const m = Math.floor((remaining % 3600000) / 60000);
+  const s = Math.floor((remaining % 60000) / 1000);
+  document.getElementById('battery-bar-time').textContent =
+    `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  const bar = document.getElementById('battery-bar');
+  bar.className = remaining < 20 * 60 * 1000 ? 'danger' : remaining < 60 * 60 * 1000 ? 'warn' : '';
+  if (remaining <= 0) clearInterval(batteryCountdownInterval);
+}
+
+// ===== BATTERY =====
+function setupBatteryInput() {
+  document.getElementById('battery-pct').addEventListener('input', function() {
+  const pct = parseFloat(this.value);
+  const resultEl = document.getElementById('battery-result');
+  const timeEl = document.getElementById('battery-time-display');
+  const nextBtn = document.getElementById('btn-1-next');
+
+  if (isNaN(pct) || pct < 0 || pct > 100) {
+    resultEl.style.display = 'none';
+    nextBtn.disabled = true;
+    return;
+  }
+  const totalMins = (pct / 100) * 8 * 60;
+  const h = Math.floor(totalMins / 60);
+  const m = Math.round(totalMins % 60);
+  timeEl.textContent = `${h}時間 ${String(m).padStart(2,'0')}分`;
+  resultEl.style.display = 'block';
+  nextBtn.disabled = false;
+
+  saveSession({ batteryPct: pct });
+  });
+}
+
+// ===== RESUME =====
+function resumeSession() {
+  const s = loadSession();
+  const statusEl = document.getElementById('resume-status');
+  statusEl.classList.remove('hidden');
+
+  if (!s.currentScreen || s.currentScreen < 2) {
+    statusEl.className = 'info-box error';
+    statusEl.textContent = '保存されたセッションが見つかりません。';
+    return;
+  }
+
+  // Restore battery
+  if (s.batteryPct !== undefined) {
+    const el = document.getElementById('battery-pct');
+    el.value = s.batteryPct;
+    el.dispatchEvent(new Event('input'));
+  }
+
+  // Restore battery countdown
+  if (s.batteryEndTime && s.batteryEndTime > Date.now()) {
+    batteryEndTime = s.batteryEndTime;
+    if (batteryCountdownInterval) clearInterval(batteryCountdownInterval);
+    batteryCountdownInterval = setInterval(updateBatteryBar, 1000);
+    updateBatteryBar();
+  }
+
+  // Restore CP
+  if (s.cp_lat && s.cp_lon) {
+    const latEl = document.getElementById('cp_lat');
+    const lonEl = document.getElementById('cp_lon');
+    if (latEl) { latEl.value = s.cp_lat; latEl.readOnly = true; }
+    if (lonEl) { lonEl.value = s.cp_lon; lonEl.readOnly = true; }
+    document.getElementById('btn-4-next').disabled = false;
+  }
+
+  // Restore tree params
+  if (s.tree_space_height) document.getElementById('tree_space_height').value = s.tree_space_height;
+  if (s.tree_space_width)  document.getElementById('tree_space_width').value  = s.tree_space_width;
+  if (s.tree_height) document.getElementById('tree_height').value = s.tree_height;
+  if (s.tree_width)  document.getElementById('tree_width').value  = s.tree_width;
+  drawTreePreview();
+
+  // Restore ref
+  if (s.ref_lat) document.getElementById('ref_lat').value = s.ref_lat;
+  if (s.ref_lon) document.getElementById('ref_lon').value = s.ref_lon;
+
+  // Restore corners
+  if (s.corners && s.corners.length > 0) {
+    corners = s.corners;
+    nextPointIndex = s.nextPointIndex || 0;
+    reached = s.reached || new Array(corners.length).fill(false);
+  }
+
+  // Restore arrival logs
+  if (s.arrivalLogs && Array.isArray(s.arrivalLogs)) {
+    arrivalLogs = s.arrivalLogs;
+  }
+
+  // STEP3以降に復帰する場合はコンパスと GNSS + 誘導システムを再起動
+  if (s.currentScreen >= 3) {
+    restartCompass();
+    ensureGnssWatching();
+  }
+
+  statusEl.className = 'info-box success';
+  statusEl.textContent = `セッションを復帰します。画面 ${s.currentScreen} から再開します。`;
+
+  setTimeout(() => {
+    goToScreen(Math.max(2, s.currentScreen));
+    if (s.currentScreen >= 7) {
+      document.getElementById('btn-7-next').disabled = nextPointIndex >= corners.length;
+      updateNavProgress();
+      updateNavButtons();
+    }
+  }, 800);
+}
+
+// コンパスを（再）起動する。ボタンクリックから呼ぶこと（iOS の requestPermission はユーザー操作が必要）
+function restartCompass() {
+  if (typeof DeviceOrientationEvent !== 'undefined' &&
+      typeof DeviceOrientationEvent.requestPermission === 'function') {
+    DeviceOrientationEvent.requestPermission()
+      .then(state => { if (state === 'granted') listenOrientation(); })
+      .catch(() => {});
+  } else {
+    listenOrientation();
+  }
+}
+
+// GNSS の位置取得ループを（未開始なら）開始する
+function ensureGnssWatching() {
+  if (gnssStarted) return;
+  gnssStarted = true;
+  currentDistanceThreshold = 0.1;
+  startWatching();
+}
+
+// ===== PLAN IMPORT (geo-field-studio-plan JSON) =====
+// 計画ファイルの corners は [経度, 緯度] で、/calculate の結果と同じ形式なのでそのまま誘導に使う
+let importedPlots = [];
+
+function showPlanStatus(kind, text) {
+  const el = document.getElementById('plan-status');
+  el.className = 'info-box ' + kind;
+  el.style.margin = '10px 0';
+  el.style.padding = '10px 14px';
+  el.textContent = text;
+}
+
+function loadPlanFile(input) {
+  const file = input.files && input.files[0];
+  input.value = ''; // 同じファイルを再選択できるように
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      importedPlots = parsePlan(JSON.parse(reader.result));
+      showPlanStatus('success', `✓ ${file.name}（${importedPlots.length} 区画）`);
+    } catch (e) {
+      importedPlots = [];
+      showPlanStatus('error', `✕ 読み込めません：${e.message}`);
+    }
+    renderPlotChoices();
+  };
+  reader.onerror = () => showPlanStatus('error', '✕ ファイルを読み込めませんでした');
+  reader.readAsText(file);
+}
+
+function parsePlan(plan) {
+  if (plan?.format !== 'geo-field-studio-plan') throw new Error('geo-field-studio-plan 形式のファイルではありません');
+  if (!Array.isArray(plan.plots)) throw new Error('区画（plots）がありません');
+  const plots = plan.plots.map((p, i) => {
+    const name = p?.name || `区画${i + 1}`;
+    const pts = (Array.isArray(p?.corners) ? p.corners : []).map(c => [Number(c?.[0]), Number(c?.[1])]);
+    const bad = pts.findIndex(([lon, lat]) =>
+      !Number.isFinite(lon) || !Number.isFinite(lat) || Math.abs(lon) > 180 || Math.abs(lat) > 90);
+    if (bad >= 0) throw new Error(`「${name}」の ${bad + 1} 番目の座標が不正です`);
+    return { name, type: p?.type, corners: pts };
+  }).filter(p => p.corners.length > 0);
+  if (plots.length === 0) throw new Error('ポイントを含む区画がありません');
+  return plots;
+}
+
+// 区画が 1 つでもプルダウンで表示（何を開始するか見えるように）。選択肢が 1 つなら操作不要
+function renderPlotChoices() {
+  const select = document.getElementById('plan-plot-select');
+  select.innerHTML = '';
+  const typeLabel = { dots: '植林点', rect: '区画の角' };
+  importedPlots.forEach((plot, i) => {
+    const opt = document.createElement('option');
+    opt.value = String(i);
+    opt.textContent = `${plot.name}（${typeLabel[plot.type] || plot.type || 'ポイント'} ${plot.corners.length} 点）`;
+    select.appendChild(opt);
+  });
+  select.disabled = importedPlots.length <= 1;
+  const hasPlots = importedPlots.length > 0;
+  document.getElementById('plan-select-wrap').classList.toggle('hidden', !hasPlots);
+  document.getElementById('btn-plan-start').classList.toggle('hidden', !hasPlots);
+}
+
+function startPlanPlot(i) {
+  const plot = importedPlots[i];
+  if (!plot) return;
+
+  corners = plot.corners.map(c => c.slice());
+  nextPointIndex = 0;
+  reached = new Array(corners.length).fill(false);
+  arrivalLogs = [];
+  saveSession({ corners, nextPointIndex, reached, arrivalLogs, planName: plot.name });
+
+  // コンパス・GNSS は Step 2〜3 で開始済み。念のため GNSS だけ未開始なら開始する
+  ensureGnssWatching();
+
+  goToScreen(7);
+}
+
+// ===== COMPASS =====
+function requestCompass() {
+  const statusEl = document.getElementById('compass-status');
+  const btn = document.getElementById('btn-compass');
+
+  if (typeof DeviceOrientationEvent !== 'undefined' &&
+      typeof DeviceOrientationEvent.requestPermission === 'function') {
+    DeviceOrientationEvent.requestPermission()
+      .then(state => {
+        if (state === 'granted') {
+          listenOrientation();
+          saveSession({ compassGranted: true });
+          statusEl.className = 'info-box success';
+          statusEl.textContent = '✓ コンパスが有効になりました';
+          btn.disabled = true;
+          setTimeout(() => goToScreen(3), 800);
+        } else {
+          statusEl.className = 'info-box error';
+          statusEl.textContent = '✕ コンパスの使用が拒否されました';
+        }
+      })
+      .catch(e => {
+        statusEl.className = 'info-box error';
+        statusEl.textContent = 'エラー: ' + e;
+      });
+  } else {
+    listenOrientation();
+    saveSession({ compassGranted: true });
+    statusEl.className = 'info-box success';
+    statusEl.textContent = '✓ コンパスを開始しました（自動許可）';
+    btn.disabled = true;
+    setTimeout(() => goToScreen(3), 600);
+  }
+}
+
+// ===== GNSS START =====
+let gnssStarted = false;
+function startGNSS() {
+  if (gnssStarted) return;
+  gnssStarted = true;
+
+  // fixed threshold = high precision
+  currentDistanceThreshold = 0.1;
+
+  const statusEl = document.getElementById('gnss-start-status');
+  const liveEl = document.getElementById('gnss-live');
+  const btn = document.getElementById('btn-start-gnss');
+  const nextBtn = document.getElementById('btn-3-next');
+
+  statusEl.textContent = '接続中...';
+  btn.disabled = true;
+
+  startWatching();
+
+  // Check first response
+  const checkInterval = setInterval(async () => {
+    try {
+      const r = await fetch('/location');
+      if (!r.ok) return;
+      const data = await r.json();
+      if (data.lat !== null && data.lon !== null) {
+        clearInterval(checkInterval);
+        statusEl.className = 'info-box success';
+        statusEl.textContent = '✓ 位置情報を受信しました';
+        liveEl.classList.remove('hidden');
+        liveEl.textContent = `緯度: ${data.lat?.toFixed(6)}\n経度: ${data.lon?.toFixed(6)}`;
+        nextBtn.disabled = false;
+        setTimeout(() => goToScreen(4), 800);
+      } else {
+        statusEl.textContent = '衛星を探しています...';
+      }
+    } catch {}
+  }, 1000);
+}
+
+// ===== CP MODE TOGGLE =====
+function toggleCPMode() {
+  const select = document.getElementById('cp_mode');
+  const mode = select.value || 'auto';
+  document.getElementById('cp_mode_desc').textContent = select.selectedOptions[0]?.dataset.desc || '';
+  document.getElementById('cp-auto').classList.toggle('hidden', mode !== 'auto');
+  document.getElementById('cp-manual').classList.toggle('hidden', mode !== 'manual');
+  document.getElementById('cp-plan').classList.toggle('hidden', mode !== 'plan');
+  // 計画ファイルモードでは「この区画でナビ開始」が次へボタンの代わり
+  document.getElementById('btn-4-next').classList.toggle('hidden', mode === 'plan');
+  if (mode === 'manual') {
+    // make cp_lat/lon editable
+    const latEl = document.getElementById('cp_lat');
+    const lonEl = document.getElementById('cp_lon');
+    if (latEl) { latEl.readOnly = false; }
+    if (lonEl) { lonEl.readOnly = false; }
+  }
+}
+
+function tryPasteCP() {
+  const paste = document.getElementById('cp_paste').value.trim();
+  if (!paste) return;
+  const parts = paste.split(/[,\s]+/).map(s => s.trim()).filter(Boolean);
+  if (parts.length >= 2) {
+    document.getElementById('cp_lat').value = parts[0];
+    document.getElementById('cp_lon').value = parts[1];
+    validateCP(false);
+  }
+}
+
+function validateCP(showFeedback = true) {
+  const latEl = document.getElementById('cp_lat');
+  const lonEl = document.getElementById('cp_lon');
+  if (!latEl || !lonEl) return false;
+  const lat = Number(latEl.value);
+  const lon = Number(lonEl.value);
+  let ok = true;
+  if (!Number.isFinite(lat) || lat < -90 || lat > 90) {
+    ok = false; if (showFeedback) latEl.classList.add('input-error');
+  } else { latEl.classList.remove('input-error'); }
+  if (!Number.isFinite(lon) || lon < -180 || lon > 180) {
+    ok = false; if (showFeedback) lonEl.classList.add('input-error');
+  } else { lonEl.classList.remove('input-error'); }
+  return ok;
+}
+
+function validateAndLockCP() {
+  const statusEl = document.getElementById('cp_manual_status');
+  if (validateCP(true)) {
+    document.getElementById('cp_lat').readOnly = true;
+    document.getElementById('cp_lon').readOnly = true;
+    statusEl.classList.remove('hidden');
+    statusEl.className = 'info-box success';
+    statusEl.textContent = '✓ CP座標を確定しました';
+    document.getElementById('btn-4-next').disabled = false;
+    saveSession({
+      cp_lat: document.getElementById('cp_lat').value,
+      cp_lon: document.getElementById('cp_lon').value
+    });
+  } else {
+    statusEl.classList.remove('hidden');
+    statusEl.className = 'info-box error';
+    statusEl.textContent = '✕ 有効な数値を入力してください';
+  }
+}
+
+function callCPFilled(lat, lon) {
+  const latEl = document.getElementById('cp_lat');
+  const lonEl = document.getElementById('cp_lon');
+  if (latEl) { latEl.value = String(lat); latEl.readOnly = true; }
+  if (lonEl) { lonEl.value = String(lon); lonEl.readOnly = true; }
+  const st = document.getElementById('cp_status');
+  if (st) { st.classList.remove('hidden'); st.className = 'info-box success'; st.textContent = `✓ CP: ${lat.toFixed(6)}, ${lon.toFixed(6)}`; }
+  document.getElementById('btn-4-next').disabled = false;
+  saveSession({ cp_lat: String(lat), cp_lon: String(lon) });
+}
+
+// ===== TREE PARAMS VALIDATION =====
+function validateTreeParams() {
+  const spaceHeight = parseFloat(document.getElementById('tree_space_height').value);
+  const spaceWidth  = parseFloat(document.getElementById('tree_space_width').value);
+  const height = parseInt(document.getElementById('tree_height').value);
+  const width  = parseInt(document.getElementById('tree_width').value);
+
+  if (isNaN(spaceHeight) || spaceHeight <= 0 || isNaN(spaceWidth) || spaceWidth <= 0 ||
+      isNaN(height) || height < 1 || isNaN(width) || width < 1) {
+    alert('すべての値を正しく入力してください。');
+    return;
+  }
+  saveSession({ tree_space_height: spaceHeight, tree_space_width: spaceWidth, tree_height: height, tree_width: width });
+  goToScreen(6);
+}
+
+// ===== TREE PARAMS PREVIEW (縦横を視覚化する図) =====
+function drawArrowLine(ctx, x1, y1, x2, y2, color) {
+  const headLen = 7;
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.stroke();
+  [[x1, y1, x2, y2], [x2, y2, x1, y1]].forEach(([fx, fy, tx, ty]) => {
+    const angle = Math.atan2(ty - fy, tx - fx);
+    ctx.beginPath();
+    ctx.moveTo(tx, ty);
+    ctx.lineTo(tx - headLen * Math.cos(angle - Math.PI / 6), ty - headLen * Math.sin(angle - Math.PI / 6));
+    ctx.lineTo(tx - headLen * Math.cos(angle + Math.PI / 6), ty - headLen * Math.sin(angle + Math.PI / 6));
+    ctx.closePath();
+    ctx.fill();
+  });
+}
+
+function drawTreePreview() {
+  const canvas = document.getElementById('tree-preview-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  const spaceHeight = parseFloat(document.getElementById('tree_space_height').value) || 2.0;
+  const spaceWidth  = parseFloat(document.getElementById('tree_space_width').value)  || 2.0;
+  const countHeight = parseInt(document.getElementById('tree_height').value) || 10;
+  const countWidth  = parseInt(document.getElementById('tree_width').value)  || 10;
+
+  const lenV = Math.max(spaceHeight * (countHeight - 1), 0.01); // 縦方向の全長 (m)
+  const lenH = Math.max(spaceWidth  * (countWidth  - 1), 0.01); // 横方向の全長 (m)
+
+  const marginX = 50, marginTop = 40, marginBottom = 18;
+  const drawW = W - marginX * 2;
+  const drawH = H - marginTop - marginBottom;
+
+  const scale = Math.min(drawW / lenH, drawH / lenV);
+  const rectW = Math.max(lenH * scale, 4);
+  const rectH = Math.max(lenV * scale, 4);
+  const x0 = (W - rectW) / 2;
+  const y0 = marginTop + (drawH - rectH) / 2;
+
+  // 矩形（植林エリア）
+  ctx.fillStyle = 'rgba(63,185,80,.12)';
+  ctx.strokeStyle = '#3fb950';
+  ctx.lineWidth = 2;
+  ctx.fillRect(x0, y0, rectW, rectH);
+  ctx.strokeRect(x0, y0, rectW, rectH);
+
+  // 木の位置（多すぎる場合は省略。基準点(CP)だけは常に表示）
+  if (countWidth <= 16 && countHeight <= 16) {
+    ctx.fillStyle = '#e6edf3';
+    for (let i = 0; i < countWidth; i++) {
+      const px = x0 + (countWidth === 1 ? rectW / 2 : (i * rectW) / (countWidth - 1));
+      for (let j = 0; j < countHeight; j++) {
+        if (i === 0 && j === countHeight - 1) continue; // 基準点は後で赤く強調して描く
+        const py = y0 + (countHeight === 1 ? rectH / 2 : (j * rectH) / (countHeight - 1));
+        ctx.beginPath();
+        ctx.arc(px, py, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }
+
+  // 基準点(CP) = i=0,j=countHeight-1（左下）を赤丸で強調
+  ctx.fillStyle = '#f85149';
+  ctx.beginPath();
+  ctx.arc(x0, y0 + rectH, 4.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#0d1117';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // 横方向の矢印（上）
+  const arrY = marginTop - 14;
+  drawArrowLine(ctx, x0, arrY, x0 + rectW, arrY, '#58a6ff');
+  ctx.fillStyle = '#58a6ff';
+  ctx.font = 'bold 13px "Noto Sans JP", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('横', x0 + rectW / 2, arrY - 14);
+
+  // 縦方向の矢印（左）
+  const arrX = marginX - 28;
+  drawArrowLine(ctx, arrX, y0, arrX, y0 + rectH, '#f0883e');
+  ctx.fillStyle = '#f0883e';
+  ctx.font = 'bold 13px "Noto Sans JP", sans-serif';
+  ctx.save();
+  ctx.translate(arrX - 16, y0 + rectH / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText('縦', 0, 0);
+  ctx.restore();
+
+  // 数値情報（HTML側、文字つぶれ防止のためcanvas外に表示）
+  const infoEl = document.getElementById('tree-preview-info');
+  if (infoEl) {
+    infoEl.innerHTML =
+      `<span style="color:#f85149;">● 基準点（CP）</span><br>` +
+      `<span style="color:#f0883e;">縦: ${spaceHeight.toFixed(1)}m × ${countHeight}本（全長 ${lenV.toFixed(1)}m）</span><br>` +
+      `<span style="color:#58a6ff;">横: ${spaceWidth.toFixed(1)}m × ${countWidth}本（全長 ${lenH.toFixed(1)}m）</span>`;
+  }
+}
+
+function setupTreePreview() {
+  ['tree_space_height', 'tree_space_width', 'tree_height', 'tree_width'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', drawTreePreview);
+  });
+  drawTreePreview();
+}
+
+// ===== AZIMUTH TOGGLE =====
+function toggleAzimuthInput() {
+  const isManual = document.getElementById('mode_manual').checked;
+  document.getElementById('ref-inputs').classList.toggle('hidden', isManual);
+  document.getElementById('manual-azimuth-input').classList.toggle('hidden', !isManual);
+}
+
+// ===== CALCULATE POINTS =====
+function calculatePoints() {
+  const azimuth_mode = document.querySelector('input[name="azimuth_mode"]:checked').value;
+  const cp_lat = document.getElementById('cp_lat').value;
+  const cp_lon = document.getElementById('cp_lon').value;
+  const tree_space_height = parseFloat(document.getElementById('tree_space_height').value);
+  const tree_space_width  = parseFloat(document.getElementById('tree_space_width').value);
+  const tree_height = parseInt(document.getElementById('tree_height').value);
+  const tree_width  = parseInt(document.getElementById('tree_width').value);
+  const statusEl = document.getElementById('azimuth-status');
+  const btn = document.getElementById('btn-calculate');
+
+  let data = {
+    shape: 'tree',
+    cp_lat, cp_lon,
+    azimuth_mode,
+    tree_space_height, tree_space_width, tree_height, tree_width
+  };
+
+  if (azimuth_mode === 'ref') {
+    const ref_lat = document.getElementById('ref_lat').value;
+    const ref_lon = document.getElementById('ref_lon').value;
+    if (!ref_lat || !ref_lon) {
+      statusEl.classList.remove('hidden');
+      statusEl.className = 'info-box error';
+      statusEl.textContent = '✕ 参照点を取得してください';
+      return;
+    }
+    data.ref_lat = ref_lat;
+    data.ref_lon = ref_lon;
+    saveSession({ ref_lat, ref_lon });
+  } else {
+    const az = parseFloat(document.getElementById('manual_azimuth').value);
+    if (isNaN(az)) {
+      statusEl.classList.remove('hidden');
+      statusEl.className = 'info-box error';
+      statusEl.textContent = '✕ 方位角を入力してください';
+      return;
+    }
+    data.manual_azimuth = az;
+    saveSession({ manual_azimuth: az });
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> 計算中...';
+  statusEl.classList.remove('hidden');
+  statusEl.className = 'info-box';
+  statusEl.textContent = 'サーバーで計算中...';
+
+  fetch('/calculate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  })
+  .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+  .then(result => {
+    if (result?.error) throw new Error(result.error);
+    if (!Array.isArray(result?.result)) throw new Error('不正なデータ形式');
+
+    corners = result.result;
+    nextPointIndex = 0;
+    reached = new Array(corners.length).fill(false);
+
+    saveSession({ corners, nextPointIndex: 0, reached });
+
+    statusEl.className = 'info-box success';
+    statusEl.textContent = `✓ ${corners.length} ポイントを算出しました`;
+    btn.disabled = false;
+    btn.innerHTML = '植林ポイントを決定して次へ →';
+
+    setTimeout(() => goToScreen(7), 600);
+  })
+  .catch(err => {
+    statusEl.className = 'info-box error';
+    statusEl.textContent = `✕ エラー: ${err.message}`;
+    btn.disabled = false;
+    btn.innerHTML = '植林ポイントを決定して次へ →';
+  });
+}
+
+// ===== NAVIGATION SCREEN =====
+function startNavigation() {
+  updateNavProgress();
+  updateNavButtons();
+  setTargetPoints();
+}
+
+function updateNavProgress() {
+  const total = corners.length;
+  const done  = nextPointIndex;
+  document.getElementById('nav-progress-text').textContent = `${done} / ${total}`;
+  document.getElementById('nav-progress-bar').style.width = total > 0 ? `${(done/total)*100}%` : '0%';
+  if (done >= total && total > 0) {
+    document.getElementById('btn-7-next').disabled = false;
+  }
+}
+
+// ===== ARRIVAL LOG =====
+let arrivalLogs = [];
+
+// ===== FINISH SCREEN =====
+function renderFinishScreen() {
+  const total = corners.length;
+  const done  = arrivalLogs.length;
+  const el = document.getElementById('finish-summary');
+  el.textContent = `全 ${total} ポイントのうち ${done} ポイントへ到達しました。`;
+}
+
+// ===== GNSS MINI MONITOR =====
+// /gnss-status はこのループでのみ取得し、他の監視（電力モニタ／デバッグパネル）は
+// この共有キャッシュを参照して重複ポーリングを避ける
+let _gnssStatusCache = null;
+function startGnssMiniMonitor() {
+  setInterval(async () => {
+  try {
+    const [locRes, gnssRes] = await Promise.all([
+      fetch('/location'),
+      fetch('/gnss-status').then(r => r.ok ? r.json() : null).catch(() => null)
+    ]);
+    _gnssStatusCache = gnssRes;
+
+    // USBの認識がない場合に限り「切断」
+    if (gnssRes && gnssRes.device_present === false) {
+      document.getElementById('gnss-mini-status').innerHTML =
+        `<span class="fix-badge" style="background:#f85149">切断</span>`;
+      return;
+    }
+    if (!locRes.ok || !gnssRes || !gnssRes.connected) {
+      document.getElementById('gnss-mini-status').innerHTML =
+        `<span class="fix-badge" style="background:#f0883e">取得中</span>`;
+      return;
+    }
+    const d = await locRes.json();
+    let q, color;
+    const gga = d.gga_fix_quality;
+    const mode = d.mode;
+    if (mode === 1 || typeof gga !== 'number' || (d.lat == null && d.lon == null)) {
+      q = '取得中'; color = '#f0883e';
+    } else if (gga === 3) {
+      // gpsd STATUS_RTK_FIX(3) = RTK Fixed（最良）
+      q = `Q:${gga}`; color = '#3fb950';
+    } else {
+      q = `Q:${gga}`; color = '#f59e0b';
+    }
+    document.getElementById('gnss-mini-status').innerHTML =
+      `<span class="fix-badge" style="background:${color}">${q}</span>`;
+  } catch {
+    document.getElementById('gnss-mini-status').innerHTML =
+      `<span class="fix-badge" style="background:#f0883e">取得中</span>`;
+  }
+  }, 1000);
+}
+
+// ===== SHUTDOWN =====
+function shutdownPi() {
+  if (!confirm('Raspberry Pi の電源を切りますか？\n緑のランプが消えてからケーブルを抜いてください。')) return;
+
+  const btn = document.getElementById('shutdown-btn');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = '停止中...';
+  }
+
+  fetch('/shutdown', { method: 'POST' })
+    .then(r => {
+      if (r.ok) {
+        alert('シャットダウンを開始しました。\n緑のランプが完全に消えたらケーブルを抜いてください。');
+      } else {
+        alert('エラーが発生しました。');
+        if (btn) { btn.disabled = false; btn.innerHTML = '⏻ 電源OFF'; }
+      }
+    })
+    .catch(e => {
+      alert('通信エラー: ' + e);
+      if (btn) { btn.disabled = false; btn.innerHTML = '⏻ 電源OFF'; }
+    });
+}
+
+// ===== TOGGLES THAT script.js ALSO CALLS =====
+// DOMContentLoaded は script.js 側で一元管理するためここでは不要
+</script>
+
+<!-- Original script.js (logic preserved) -->
+<script src="script.js?v=5"></script>
+
+<script>
+// ===== PATCH: override/extend script.js functions to work with new UI =====
+// getCPPosition / getRefPosition は script.js 側で完全実装済みのため上書き不要
+
+function applyNavPatches() {
+// Patch checkProximity to update nav progress and log
+const _origCheckProximity = window.checkProximity;
+window.checkProximity = function(currentLat, currentLon, givenDistance) {
+  const prevIndex = nextPointIndex;
+  _origCheckProximity && _origCheckProximity(currentLat, currentLon, givenDistance);
+  if (nextPointIndex !== prevIndex) {
+    // A point was reached（位置は到着ダイアログで OK を押した時点のものに差し替える）
+    const entry = {
+      index: prevIndex + 1,
+      time: new Date().toLocaleTimeString('ja-JP'),
+      lat: currentLat,
+      lon: currentLon
+    };
+    arrivalLogs.push(entry);
+    updateNavProgress();
+    saveSession({ nextPointIndex, reached, arrivalLogs });
+    Promise.resolve(window._lastArrivalRecord).then(pos => {
+      if (!pos) return;
+      entry.lat = pos.lat;
+      entry.lon = pos.lon;
+      saveSession({ arrivalLogs });
+    });
+  }
+};
+
+// Patch updateNextPointMessage to go to screen 8 automatically when done
+const _origUpdateNext = window.updateNextPointMessage;
+window.updateNextPointMessage = function() {
+  _origUpdateNext && _origUpdateNext();
+  if (nextPointIndex >= corners.length && corners.length > 0) {
+    updateNavProgress();
+    document.getElementById('btn-7-next').disabled = false;
+    setTimeout(() => goToScreen(8), 800);
+  }
+};
+
+// Patch skipCurrentPoint / goBackToPreviousPoint to update progress
+const _origSkip = window.skipCurrentPoint;
+window.skipCurrentPoint = function() {
+  _origSkip && _origSkip();
+  updateNavProgress();
+  saveSession({ nextPointIndex, reached });
+  if (nextPointIndex >= corners.length && corners.length > 0) {
+    setTimeout(() => goToScreen(8), 800);
+  }
+};
+
+const _origPrev = window.goBackToPreviousPoint;
+window.goBackToPreviousPoint = function() {
+  _origPrev && _origPrev();
+  updateNavProgress();
+  saveSession({ nextPointIndex, reached });
+};
+}
+
+// ===== DEBUG SYSTEM =====
+let _debugLog = [];
+let _lastPollTime = null;
+let _lastDist = null;
+
+function debugLog(msg, color) {
+  const time = new Date().toLocaleTimeString('ja-JP', { hour12: false });
+  _debugLog.unshift({ time, msg, color: color || '#8b949e' });
+  if (_debugLog.length > 20) _debugLog.length = 20;
+  const el = document.getElementById('dbg-log');
+  if (el) {
+    el.innerHTML = _debugLog.map(e =>
+      `<div style="color:${e.color}"><span style="color:#444;">[${e.time}]</span> ${e.msg}</div>`
+    ).join('');
+  }
+}
+
+function debugClearLog() {
+  _debugLog = [];
+  const el = document.getElementById('dbg-log');
+  if (el) el.innerHTML = '';
+}
+
+function debugUpdateState() {
+  const panel = document.getElementById('debug-panel');
+  if (!panel || panel.style.display === 'none') return;
+
+  // Watch loop
+  const watchEl = document.getElementById('dbg-watch');
+  if (watchEl) {
+    const active = !!watchInterval;
+    watchEl.textContent = active ? '✓ ACTIVE' : '✗ STOPPED';
+    watchEl.style.color = active ? '#3fb950' : '#f85149';
+  }
+
+  // inFlight
+  const ifEl = document.getElementById('dbg-inflight');
+  if (ifEl) {
+    ifEl.textContent = inFlight ? '🔒 true' : '✓ false';
+    ifEl.style.color = inFlight ? '#f0883e' : '#3fb950';
+  }
+
+  // Point index
+  const idxEl = document.getElementById('dbg-idx');
+  if (idxEl) idxEl.textContent = `${nextPointIndex} / ${corners.length}`;
+
+  // Compass
+  const cmpEl = document.getElementById('dbg-compass');
+  if (cmpEl) cmpEl.textContent = (compassHeading !== null && compassHeading !== undefined)
+    ? `${Math.round(compassHeading)}°` : '未取得';
+
+  // Location
+  const loc = window.latestLocation;
+  const latEl = document.getElementById('dbg-lat');
+  const lonEl = document.getElementById('dbg-lon');
+  if (latEl) latEl.textContent = (loc && typeof loc.lat === 'number') ? loc.lat.toFixed(8) : '--';
+  if (lonEl) lonEl.textContent = (loc && typeof loc.lon === 'number') ? loc.lon.toFixed(8) : '--';
+
+  // Last distance
+  const dstEl = document.getElementById('dbg-dist');
+  if (dstEl) dstEl.textContent = (_lastDist !== null) ? _lastDist.toFixed(3) : '--';
+
+  // Threshold
+  const thrEl = document.getElementById('dbg-thresh');
+  if (thrEl) thrEl.textContent = (typeof currentDistanceThreshold === 'number')
+    ? currentDistanceThreshold.toFixed(2) : '--';
+
+  // Fix quality
+  const fixEl = document.getElementById('dbg-fix');
+  if (fixEl && loc) {
+    const gga = loc.gga_fix_quality;
+    const mode = loc.mode;
+    let label = '--', color = '#8b949e';
+    if (mode === 1 || gga === 0) { label = '初期化中 (Q:' + gga + ')'; color = '#9ca3af'; }
+    else if (gga === 4)          { label = '安定 (Q:4)';   color = '#3fb950'; }
+    else if (gga !== undefined)  { label = `不安定 (Q:${gga})`; color = '#f0883e'; }
+    fixEl.innerHTML = `<span style="color:${color}">${label}</span>`;
+  }
+
+  // Poll age
+  const ageEl = document.getElementById('dbg-poll-age');
+  if (ageEl) {
+    if (_lastPollTime) {
+      const age = Math.round((Date.now() - _lastPollTime) / 100) / 10;
+      ageEl.textContent = `${age}s`;
+      ageEl.style.color = age > 3 ? '#f85149' : age > 1.5 ? '#f0883e' : '#3fb950';
+    } else {
+      ageEl.textContent = 'なし';
+    }
+  }
+
+  // Target
+  const tgtEl = document.getElementById('dbg-target');
+  if (tgtEl) {
+    if (corners.length > 0 && nextPointIndex < corners.length) {
+      const c = corners[nextPointIndex];
+      tgtEl.textContent = `[${c[0]?.toFixed(8)}, ${c[1]?.toFixed(8)}]`;
+    } else {
+      tgtEl.textContent = corners.length === 0 ? 'corners未設定' : '全ポイント完了';
+    }
+  }
+
+  // CPU Temperature (非同期、パネルが開いている時だけ)
+  fetch('/temperature').then(r => r.ok ? r.json() : null).then(d => {
+    const el = document.getElementById('dbg-temp');
+    if (!el) return;
+    if (d && d.temp_c !== null) {
+      const t = d.temp_c;
+      el.textContent = `${t.toFixed(1)} °C`;
+      el.style.color = t >= 80 ? '#f85149' : t >= 70 ? '#f0883e' : '#3fb950';
+    } else {
+      el.textContent = 'N/A';
+      el.style.color = '#8b949e';
+    }
+  }).catch(() => {});
+
+  // GNSS接続状況（gnss-mini監視の共有キャッシュを参照）
+  {
+    const d = _gnssStatusCache;
+    const el = document.getElementById('dbg-gnss-conn');
+    if (el) {
+      if (!d) {
+        el.textContent = 'N/A'; el.style.color = '#8b949e';
+      } else if (d.connected) {
+        const age = d.data_age_s;
+        const fresh = age !== null && age < 5;
+        el.innerHTML = `<span style="color:#3fb950">接続中</span>${age !== null ? ` <span style="color:${fresh ? '#3fb950' : '#f0883e'}">(${age}s前)</span>` : ''}`;
+      } else if (d.device_present) {
+        el.innerHTML = '<span style="color:#f0883e">取得中</span>';
+      } else {
+        el.innerHTML = '<span style="color:#f85149">切断</span>';
+      }
+    }
+  }
+}
+
+function toggleDebugPanel() {
+  const panel = document.getElementById('debug-panel');
+  if (!panel) return;
+  const visible = panel.style.display !== 'none';
+  panel.style.display = visible ? 'none' : 'block';
+  if (!visible) debugUpdateState();
+}
+
+// デバッグパネルの定期更新（1000ms）
+function startDebugPanel() {
+  setInterval(debugUpdateState, 1000);
+}
+
+function applyDebugPatches() {
+// script.js の requestPiLocation をパッチしてポーリング時刻を記録
+const _origReqPiLoc = window.requestPiLocation;
+window.requestPiLocation = function() {
+  _lastPollTime = Date.now();
+  _origReqPiLoc && _origReqPiLoc();
+};
+
+// showPosition をパッチして距離計算結果を補足
+const _origShowPos = window.showPosition;
+window.showPosition = function(position) {
+  const lat = position.coords?.latitude;
+  const lon = position.coords?.longitude;
+  if (typeof lat === 'number' && typeof lon === 'number') {
+    debugLog(`位置更新: (${lat.toFixed(6)}, ${lon.toFixed(6)}) idx=${nextPointIndex}/${corners.length}`);
+  } else {
+    debugLog('位置更新: lat/lon なし', '#f0883e');
+  }
+  _origShowPos && _origShowPos(position);
+};
+
+// /calculate_distance_azimuth の結果をパッチで捕捉
+// → showPosition 内の fetch を直接ラップはできないため、
+//    updateDistanceAndAzimuth をパッチして距離を記録
+const _origUDA2 = window.updateDistanceAndAzimuth;
+window.updateDistanceAndAzimuth = function(idx, data) {
+  _lastDist = data.distance;
+  debugLog(`距離API: ${data.distance.toFixed(3)}m  方位:${data.azimuth.toFixed(1)}°`, '#58a6ff');
+  _origUDA2 && _origUDA2(idx, data);
+};
+
+// checkProximity をパッチして到達イベントをログ
+const _origCP2 = window.checkProximity;
+window.checkProximity = function(currentLat, currentLon, givenDistance) {
+  if (typeof givenDistance === 'number') {
+    const thresh = currentDistanceThreshold;
+    if (givenDistance <= thresh) {
+      debugLog(`⚠ 閾値以内: ${givenDistance.toFixed(3)}m ≤ ${thresh}m  P${nextPointIndex+1}`, '#f0883e');
+    }
+  }
+  _origCP2 && _origCP2(currentLat, currentLon, givenDistance);
+};
+
+// startWatching / stopWatching をパッチ
+const _origSW2 = window.startWatching;
+window.startWatching = function() {
+  debugLog('startWatching() 呼び出し', '#3fb950');
+  _origSW2 && _origSW2();
+};
+
+const _origStW2 = window.stopWatching;
+window.stopWatching = function() {
+  debugLog('stopWatching() 呼び出し ← ループ停止', '#f85149');
+  _origStW2 && _origStW2();
+};
+
+// STEP7 表示時フック
+const _origStartNav = window.startNavigation;
+window.startNavigation = function() {
+  debugLog('=== startNavigation() ===', '#f0883e');
+  startPowerMonitor();
+  _origStartNav && _origStartNav();
+};
+}
+
+// ===== END DEBUG SYSTEM =====
+
+// ===== 電力・接続モニター =====
+let _powerMonitorInterval = null;
+let _disconnectPowerLog = [];
+
+// pm-* 表示要素は撤去済み（非表示だった）。ここでは電力状態の取得と
+// GNSS切断時の診断記録だけを行う。GNSS接続状態は gnss-mini 監視の共有キャッシュを参照。
+function updatePowerMonitor() {
+  fetch('/power-status').then(r => r.ok ? r.json() : null).catch(() => null).then(pw => {
+    const gs = _gnssStatusCache;
+    const connected = gs?.connected ?? false;
+    const volt = pw?.voltage ?? null;
+
+    // 切断時のデータを記録（GNSS切断調査用）
+    if (!connected && pw) {
+      const record = {
+        time: new Date().toISOString(),
+        voltage: volt,
+        under_voltage_now: pw.under_voltage_now,
+        under_voltage_past: pw.under_voltage_past,
+        throttled_now: pw.throttled_now,
+        throttled_past: pw.throttled_past,
+        throttled_hex: pw.throttled_hex,
+      };
+      if (_disconnectPowerLog.length === 0 ||
+          _disconnectPowerLog[_disconnectPowerLog.length - 1].time !== record.time) {
+        _disconnectPowerLog.push(record);
+        console.warn('[GNSS切断記録]', record);
+      }
+    }
+  });
+}
+
+// STEP7表示中は1秒ごとに更新
+function startPowerMonitor() {
+  if (_powerMonitorInterval) return;
+  updatePowerMonitor();
+  _powerMonitorInterval = setInterval(updatePowerMonitor, 1000);
+}
+
+function stopPowerMonitor() {
+  if (_powerMonitorInterval) {
+    clearInterval(_powerMonitorInterval);
+    _powerMonitorInterval = null;
+  }
+}
+
+// 切断ログを取得する関数（デバッグ用）
+window.getDisconnectPowerLog = function() { return _disconnectPowerLog; };
+
+function applyViewPatches() {
+// initializeDistanceView: #distanceにスタブ要素だけ作成し、direction-arrowは触らない
+window.initializeDistanceView = function() {
+  const dist = document.getElementById('distance');
+  if (dist) {
+    dist.innerHTML = `
+      <pre id="position_view" style="display:none;"></pre>
+      <span id="point-index" style="display:none;"></span>
+      <span id="distance-value" style="display:none;"></span>
+      <span id="azimuth-value" style="display:none;"></span>
+    `;
+  }
+};
+
+// updateDistanceAndAzimuth: screen-7のcm表示・緯度経度表示も更新
+const _origUpdateDA = window.updateDistanceAndAzimuth;
+window.updateDistanceAndAzimuth = function(idx, data) {
+  _origUpdateDA(idx, data);
+  const cmEl = document.getElementById('nav-dist-cm');
+  if (cmEl) cmEl.textContent = Math.round(data.distance * 100).toLocaleString();
+};
+}
+
+// ===== ORDERED STARTUP =====
+// 起動時のセットアップ処理を、定義した順に一つずつ実行する
+// （すべて同期実行なので、従来どおり script.js の DOMContentLoaded より前に完了する）
+function initApp() {
+  renderStepDots();        // 1. ステップ表示を生成
+  setupBatteryInput();     // 2. バッテリー入力のイベント登録
+  setupTreePreview();      // 3. 植林プレビューのイベント登録＋初期描画
+  applyNavPatches();       // 4. ナビ系 script.js 関数のパッチ適用
+  applyDebugPatches();     // 5. デバッグ系のパッチ適用
+  applyViewPatches();      // 6. 表示系（距離／CM）のパッチ適用
+  startGnssMiniMonitor();  // 7. GNSS通信品質モニタの定期ポーリング開始
+  startDebugPanel();       // 8. デバッグパネルの定期更新開始
+}
+initApp();
+</script>
+
+</body>
+</html>

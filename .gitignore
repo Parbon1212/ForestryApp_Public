@@ -1,0 +1,20 @@
+# 秘密鍵・証明書（絶対に公開しない）
+*.pem
+*.key
+*.bak
+certs/
+static/rootCA.*
+
+# 個人環境の設定（Wi-Fiパスワード等を含む）
+backup_settings/
+
+# 測位データ・ログ
+data/
+*.log
+
+# Python / OS
+__pycache__/
+*.pyc
+.DS_Store
+.venv/
+venv/

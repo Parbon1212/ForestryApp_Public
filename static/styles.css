@@ -1,0 +1,127 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+h1 {
+    font-size: 24px;
+    margin-bottom: 20px;
+}
+
+h2{
+    font-size: 18px;
+    text-align: center; /* h2タグを中央寄りに表示 */
+}
+
+label {
+    display: block;
+    margin-top: 10px;
+    font-size: 18px;
+}
+
+input[type="text"] {
+    font-size: 18px;
+    padding: 5px;
+    width: 80%;
+    max-width: 400px;
+    margin-bottom: 10px;
+}
+
+.button {
+    width: 150px; /* ボタンの幅 */
+    height: auto; /* 高さを自動調整 */
+    padding: 10px; /* ボタン内のパディング */
+    font-size: 14px; /* テキストサイズ */
+    white-space: normal; /* テキストの自動改行を許可 */
+    word-wrap: break-word; /* 必要に応じて単語の途中で改行 */
+    text-align: center; /* テキストを中央揃え */
+    display: flex;
+    align-items: center; /* 縦方向の中央揃え */
+    justify-content: center; /* 横方向の中央揃え */
+    margin: 10px 0; /* ボタン同士の上下に10pxの余白を追加 */
+}
+
+#result, #status, #next_point {
+    font-size: 12px;
+    margin-top: 10px;
+    text-align: center;
+    width: 90%; /* 横幅をディスプレイに応じて調整 */
+    max-width: 400px; /* 最大幅を設定 */
+    word-wrap: break-word; /* 必要に応じて単語の途中で改行 */
+    box-sizing: border-box; /* パディングとボーダーを含めてサイズを計算 */
+}
+
+#position_view, #target_view {
+    font-size: 20px;
+    margin-top: 10px;
+    white-space: pre-wrap;
+    text-align: center;
+}
+
+.corner-reached {
+    opacity: 0.5;
+    position: relative;
+}
+
+.corner-reached:after {
+    content: ' ✓';
+    color: green;
+    position: absolute;
+    right: 0;
+    top: 0;
+}
+
+/* メディアクエリでのレスポンシブデザイン */
+@media (max-width: 768px) {
+    body {
+        margin: 10px;
+    }
+
+    h1 {
+        font-size: 22px;
+    }
+
+    h2{
+        font-size: 22px;
+    }
+
+    label, input[type="text"], #result, #status, #next_point, #position_view, #target_view {
+        font-size: 18px;
+        text-align: center;
+    }
+
+    .button {
+        padding: 8px 16px; /* ボタン内のパディング */
+        font-size: 18px; /* テキストサイズ */
+    }
+}
+
+@media (max-width: 480px) {
+    body {
+        margin: 5px;
+    }
+
+    h1 {
+        font-size: 24px;
+    }
+
+    h2{
+        font-size: 18px;
+    }
+
+    label, input[type="text"], #result, #status, #next_point, #position_view, #target_view {
+        font-size: 12px;
+        text-align: center;
+    }
+
+    .button {
+        padding: 10px 20px; /* ボタン内のパディング */
+        font-size: 14px; /* テキストサイズ */
+    }
+}
+
+
+
