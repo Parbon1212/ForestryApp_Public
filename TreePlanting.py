@@ -5,9 +5,9 @@ from DifferenceCalculation import calculate_difference
 
 geod = Geod(ellps="WGS84")
 
-difference = []
 # cp緯度 cp経度 ref緯度 ref経度
 def tree_planting_coordinates(lot1, lot2, lot3, lot4, height, width, space_height, space_width):
+    difference = []  # CPごとに作り直す（共有すると最初のCPの値が使われ続ける）
     for kakudo in [0, 90]:
         difference.append(calculate_difference((lot1, lot2), kakudo, 1))
 

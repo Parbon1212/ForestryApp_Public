@@ -75,10 +75,12 @@ function classifyFixStatus(q, devicePresent) {
     if (mode === 1 || gga === 0 || gga == null) {
         return { label: '取得中', color: '#9ca3af', h1s: null };
     }
-    if (gga === 4) {
+    // gga_fix_quality は gpsd の STATUS 値（NMEA GGA のコードとは異なる）
+    // 1=GPS, 2=DGPS, 3=RTK_FIX, 4=RTK_FLT
+    if (gga === 3) {
         return { label: 'RTK固定', color: '#16a34a', h1s: h1sFrom(q) };
     }
-    if (gga === 5) {
+    if (gga === 4) {
         return { label: 'RTKフロート', color: '#f59e0b', h1s: h1sFrom(q) };
     }
     if (gga === 2) {

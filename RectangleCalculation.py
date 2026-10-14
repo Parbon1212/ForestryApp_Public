@@ -5,9 +5,9 @@ from pyproj import Geod
 
 geod = Geod(ellps="WGS84")
 
-difference = []
 # cp緯度 cp経度 ref緯度 ref経度
 def calculate_rectangle_coordinates(lot1, lot2, lot3, lot4, touchline_length, goalline_length):
+    difference = []  # CPごとに作り直す（共有すると最初のCPの値が使われ続ける）
     for kakudo in [0, 90]:
         difference.append(calculate_difference((lot1, lot2), kakudo, 1))
 

@@ -36,8 +36,8 @@ def track_coordinates(straight_length, radius):
 
     return coordinates
 
-difference = []
 def calculate_track_coordinates(cp_lat, cp_lon, track_coordinates, reference_lat, reference_lon):
+    difference = []  # CPごとに作り直す（共有すると最初のCPの値が使われ続ける）
     for kakudo in [0, 90]:
         difference.append(calculate_difference((cp_lat, cp_lon), kakudo, 1))
 

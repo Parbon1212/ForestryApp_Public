@@ -1628,7 +1628,7 @@ function shutdownPi() {
 </script>
 
 <!-- Original script.js (logic preserved) -->
-<script src="script.js?v=5"></script>
+<script src="script.js?v=6"></script>
 
 <script>
 // ===== PATCH: override/extend script.js functions to work with new UI =====
@@ -1764,7 +1764,7 @@ function debugUpdateState() {
     const mode = loc.mode;
     let label = '--', color = '#8b949e';
     if (mode === 1 || gga === 0) { label = '初期化中 (Q:' + gga + ')'; color = '#9ca3af'; }
-    else if (gga === 4)          { label = '安定 (Q:4)';   color = '#3fb950'; }
+    else if (gga === 3)          { label = '安定 (Q:3)';   color = '#3fb950'; }  // gpsd STATUS_RTK_FIX
     else if (gga !== undefined)  { label = `不安定 (Q:${gga})`; color = '#f0883e'; }
     fixEl.innerHTML = `<span style="color:${color}">${label}</span>`;
   }
