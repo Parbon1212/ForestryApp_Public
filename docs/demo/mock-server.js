@@ -23,7 +23,7 @@
   // ---- 擬似歩行: 誘導中は次の目標ポイントへ向かって歩く ----
   function currentTarget() {
     try {
-      if (currentScreen !== 7 || !watchInterval) return null;
+      if (currentScreen !== 8 || !watchInterval) return null;
       if (!Array.isArray(corners) || nextPointIndex >= corners.length) return null;
       return corners[nextPointIndex];
     } catch {

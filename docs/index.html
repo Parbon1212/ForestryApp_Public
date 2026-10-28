@@ -473,7 +473,7 @@
 <div class="screen active" id="screen-1">
   <div class="step-indicator" id="steps-1"></div>
   <div class="card">
-    <div class="screen-title">Step 1 / 8</div>
+    <div class="screen-title">Step 1 / 9</div>
     <h2>🔋 バッテリー残量</h2>
     <p class="screen-desc">現在のバッテリー残量を入力すると、残り稼働可能時間を表示します。（最大稼働時間: 8時間）</p>
 
@@ -501,7 +501,7 @@
   <div class="step-indicator" id="steps-2"></div>
   <div class="card">
     <button class="btn-back" onclick="goToScreen(1)">← 前の画面へ</button>
-    <div class="screen-title">Step 2 / 8</div>
+    <div class="screen-title">Step 2 / 9</div>
     <h2>🧭 コンパス許可</h2>
     <p class="screen-desc">方向矢印表示のため、デバイスのコンパス（方位センサー）へのアクセスを許可してください。</p>
 
@@ -519,7 +519,7 @@
   <div class="step-indicator" id="steps-3"></div>
   <div class="card">
     <button class="btn-back" onclick="goToScreen(2)">← 前の画面へ</button>
-    <div class="screen-title">Step 3 / 8</div>
+    <div class="screen-title">Step 3 / 9</div>
     <h2>📡 現在地の取得</h2>
     <p class="screen-desc">GNSSレシーバーからの位置情報の受信を開始します。</p>
 
@@ -540,7 +540,7 @@
   <div class="step-indicator" id="steps-4"></div>
   <div class="card">
     <button class="btn-back" onclick="goToScreen(3)">← 前の画面へ</button>
-    <div class="screen-title">Step 4 / 8</div>
+    <div class="screen-title">Step 4 / 9</div>
     <h2>📍 基準点（CP）の設定</h2>
     <p class="screen-desc">植林の基準となる地点を設定します。</p>
 
@@ -609,7 +609,7 @@
   <div class="step-indicator" id="steps-5"></div>
   <div class="card">
     <button class="btn-back" onclick="goToScreen(4)">← 前の画面へ</button>
-    <div class="screen-title">Step 5 / 8</div>
+    <div class="screen-title">Step 5 / 9</div>
     <h2>🌲 植林パラメータ</h2>
     <p class="screen-desc">植林間隔と本数を指定してください。</p>
 
@@ -656,7 +656,7 @@
   <div class="step-indicator" id="steps-6"></div>
   <div class="card">
     <button class="btn-back" onclick="goToScreen(5)">← 前の画面へ</button>
-    <div class="screen-title">Step 6 / 8</div>
+    <div class="screen-title">Step 6 / 9</div>
     <h2>🧭 方位角の指定</h2>
     <p class="screen-desc">植林ポイントを配置する方向（方位角）を決定します。</p>
 
@@ -708,15 +708,43 @@
 </div>
 </div>
 
-<!-- ========== SCREEN 7: NAVIGATION ========== -->
-<div class="screen" id="screen-7" style="gap:0; padding:16px 20px 32px; justify-content:space-between;">
+<!-- ========== SCREEN 7: ARRIVAL RADIUS ========== -->
+<div class="screen" id="screen-7">
   <div class="step-indicator" id="steps-7"></div>
+  <div class="card">
+    <button class="btn-back" onclick="goToScreen(radiusBackScreen)">← 前の画面へ</button>
+    <div class="screen-title">Step 7 / 9</div>
+    <h2>🎯 到達半径の指定</h2>
+    <p class="screen-desc">目標地点からこの距離以内に入ったら「到着」と判定します。</p>
+
+    <div class="field">
+      <label>到達半径 (cm)</label>
+      <input type="number" id="arrival_radius_cm" min="1" step="1" value="10" inputmode="decimal">
+    </div>
+    <div class="nav-row" style="margin-bottom:8px;">
+      <button class="btn btn-secondary" style="margin-top:0;" onclick="setArrivalRadiusPreset(10)">10 cm</button>
+      <button class="btn btn-secondary" style="margin-top:0;" onclick="setArrivalRadiusPreset(30)">30 cm</button>
+      <button class="btn btn-secondary" style="margin-top:0;" onclick="setArrivalRadiusPreset(100)">1 m</button>
+    </div>
+
+    <div id="radius-status" class="info-box hidden"></div>
+
+    <button class="btn btn-primary" onclick="applyArrivalRadius()" style="margin-top:8px;">
+      ナビ開始 →
+    </button>
+</div>
+</div>
+
+<!-- ========== SCREEN 8: NAVIGATION ========== -->
+<div class="screen" id="screen-8" style="gap:0; padding:16px 20px 32px; justify-content:space-between;">
+  <div class="step-indicator" id="steps-8"></div>
 
   <!-- 矢印 + 距離(cm) -->
   <div style="display:flex; flex-direction:column; align-items:center; flex:1; justify-content:center; gap:10px;">
     <canvas id="direction-arrow" width="220" height="220"></canvas>
     <div id="nav-dist-cm" style="font-size:52px; font-weight:700; font-family:'DM Mono',monospace; color:var(--accent); line-height:1;">--</div>
     <div style="font-size:14px; color:var(--text2); letter-spacing:.05em;">cm</div>
+    <div id="nav-radius" style="font-size:12px; color:var(--text2);">到達半径 10 cm</div>
   </div>
 
   <!-- 進捗 -->
@@ -737,17 +765,17 @@
   </div>
 
   <!-- 完了 -->
-  <button class="btn btn-primary" id="btn-7-next" onclick="goToScreen(8)" disabled style="width:100%; max-width:400px; margin:0 auto; display:block;">
+  <button class="btn btn-primary" id="btn-8-next" onclick="goToScreen(9)" disabled style="width:100%; max-width:400px; margin:0 auto; display:block;">
     完了
   </button>
 </div>
 
-<!-- ========== SCREEN 8: FINISH ========== -->
-<div class="screen" id="screen-8">
-  <div class="step-indicator" id="steps-8"></div>
+<!-- ========== SCREEN 9: FINISH ========== -->
+<div class="screen" id="screen-9">
+  <div class="step-indicator" id="steps-9"></div>
   <div class="card">
-    <button class="btn-back" onclick="goToScreen(7)">← 前の画面へ</button>
-    <div class="screen-title">Step 8 / 8</div>
+    <button class="btn-back" onclick="goToScreen(8)">← 前の画面へ</button>
+    <div class="screen-title">Step 9 / 9</div>
     <h2>🎉 作業完了</h2>
     <p class="screen-desc">すべての植林ポイントへの誘導が完了しました。到着ログをダウンロードできます。</p>
 
@@ -864,7 +892,7 @@
 <!-- ========== HIDDEN FORM FIELDS (used by script.js logic) ========== -->
 <!-- shape is fixed to "tree" -->
 <input type="hidden" id="shape" value="tree">
-<!-- threshold fixed to high precision -->
+<!-- 到達判定の閾値は STEP7 で指定（arrival_radius_cm）。この値は使っていない -->
 <input type="hidden" id="threshold-selector" value="high">
 
 <script>
@@ -884,7 +912,7 @@ function loadSession() {
 
 // ===== STEP DOTS =====
 function renderStepDots() {
-  const total = 8;
+  const total = 9;
   for (let s = 1; s <= total; s++) {
     const el = document.getElementById(`steps-${s}`);
     if (!el) continue;
@@ -902,8 +930,8 @@ function goToScreen(n) {
   const prev = document.getElementById(`screen-${currentScreen}`);
   const next = document.getElementById(`screen-${n}`);
   if (!next) return;
-  // STEP7 を離れるときは電力モニタのポーリングを止める
-  if (currentScreen === 7 && n !== 7 && typeof stopPowerMonitor === 'function') {
+  // STEP8（ナビ）を離れるときは電力モニタのポーリングを止める
+  if (currentScreen === 8 && n !== 8 && typeof stopPowerMonitor === 'function') {
     stopPowerMonitor();
   }
   prev.classList.remove('active');
@@ -918,10 +946,10 @@ function goToScreen(n) {
 
   document.getElementById('distance').style.display = 'none';
 
-  if (n === 7) {
+  if (n === 8) {
     startNavigation();
   }
-  if (n === 8) {
+  if (n === 9) {
     renderFinishScreen();
   }
 }
@@ -1032,6 +1060,13 @@ function resumeSession() {
     reached = s.reached || new Array(corners.length).fill(false);
   }
 
+  // Restore arrival radius
+  if (s.arrivalRadiusCm) {
+    document.getElementById('arrival_radius_cm').value = s.arrivalRadiusCm;
+    setArrivalThreshold(s.arrivalRadiusCm);
+  }
+  if (s.radiusBackScreen) radiusBackScreen = s.radiusBackScreen;
+
   // Restore arrival logs
   if (s.arrivalLogs && Array.isArray(s.arrivalLogs)) {
     arrivalLogs = s.arrivalLogs;
@@ -1048,8 +1083,8 @@ function resumeSession() {
 
   setTimeout(() => {
     goToScreen(Math.max(2, s.currentScreen));
-    if (s.currentScreen >= 7) {
-      document.getElementById('btn-7-next').disabled = nextPointIndex >= corners.length;
+    if (s.currentScreen >= 8) {
+      document.getElementById('btn-8-next').disabled = nextPointIndex >= corners.length;
       updateNavProgress();
       updateNavButtons();
     }
@@ -1072,7 +1107,6 @@ function restartCompass() {
 function ensureGnssWatching() {
   if (gnssStarted) return;
   gnssStarted = true;
-  currentDistanceThreshold = 0.1;
   startWatching();
 }
 
@@ -1147,7 +1181,8 @@ function startPlanPlot(i) {
   nextPointIndex = 0;
   reached = new Array(corners.length).fill(false);
   arrivalLogs = [];
-  saveSession({ corners, nextPointIndex, reached, arrivalLogs, planName: plot.name });
+  radiusBackScreen = 4;
+  saveSession({ corners, nextPointIndex, reached, arrivalLogs, planName: plot.name, radiusBackScreen });
 
   // コンパス・GNSS は Step 2〜3 で開始済み。念のため GNSS だけ未開始なら開始する
   ensureGnssWatching();
@@ -1195,9 +1230,6 @@ let gnssStarted = false;
 function startGNSS() {
   if (gnssStarted) return;
   gnssStarted = true;
-
-  // fixed threshold = high precision
-  currentDistanceThreshold = 0.1;
 
   const statusEl = document.getElementById('gnss-start-status');
   const liveEl = document.getElementById('gnss-live');
@@ -1508,7 +1540,8 @@ function calculatePoints() {
     nextPointIndex = 0;
     reached = new Array(corners.length).fill(false);
 
-    saveSession({ corners, nextPointIndex: 0, reached });
+    radiusBackScreen = 6;
+    saveSession({ corners, nextPointIndex: 0, reached, radiusBackScreen });
 
     statusEl.className = 'info-box success';
     statusEl.textContent = `✓ ${corners.length} ポイントを算出しました`;
@@ -1525,6 +1558,37 @@ function calculatePoints() {
   });
 }
 
+// ===== ARRIVAL RADIUS (STEP7) =====
+// 計画ファイル読込（STEP4）と通常計算（STEP6）の両方から来るので、戻り先を覚えておく
+let radiusBackScreen = 6;
+
+function setArrivalThreshold(cm) {
+  currentDistanceThreshold = cm / 100;
+  document.getElementById('nav-radius').textContent = `到達半径 ${cm} cm`;
+}
+
+function setArrivalRadiusPreset(cm) {
+  document.getElementById('arrival_radius_cm').value = cm;
+}
+
+function applyArrivalRadius() {
+  const input = document.getElementById('arrival_radius_cm');
+  const statusEl = document.getElementById('radius-status');
+  const cm = parseFloat(input.value);
+  if (!Number.isFinite(cm) || cm < 1) {
+    input.classList.add('input-error');
+    statusEl.classList.remove('hidden');
+    statusEl.className = 'info-box error';
+    statusEl.textContent = '✕ 1 cm 以上の値を入力してください';
+    return;
+  }
+  input.classList.remove('input-error');
+  statusEl.classList.add('hidden');
+  setArrivalThreshold(cm);
+  saveSession({ arrivalRadiusCm: cm });
+  goToScreen(8);
+}
+
 // ===== NAVIGATION SCREEN =====
 function startNavigation() {
   updateNavProgress();
@@ -1538,7 +1602,7 @@ function updateNavProgress() {
   document.getElementById('nav-progress-text').textContent = `${done} / ${total}`;
   document.getElementById('nav-progress-bar').style.width = total > 0 ? `${(done/total)*100}%` : '0%';
   if (done >= total && total > 0) {
-    document.getElementById('btn-7-next').disabled = false;
+    document.getElementById('btn-8-next').disabled = false;
   }
 }
 
@@ -1666,8 +1730,8 @@ window.updateNextPointMessage = function() {
   _origUpdateNext && _origUpdateNext();
   if (nextPointIndex >= corners.length && corners.length > 0) {
     updateNavProgress();
-    document.getElementById('btn-7-next').disabled = false;
-    setTimeout(() => goToScreen(8), 800);
+    document.getElementById('btn-8-next').disabled = false;
+    setTimeout(() => goToScreen(9), 800);
   }
 };
 
@@ -1678,7 +1742,7 @@ window.skipCurrentPoint = function() {
   updateNavProgress();
   saveSession({ nextPointIndex, reached });
   if (nextPointIndex >= corners.length && corners.length > 0) {
-    setTimeout(() => goToScreen(8), 800);
+    setTimeout(() => goToScreen(9), 800);
   }
 };
 
@@ -1895,7 +1959,7 @@ window.stopWatching = function() {
   _origStW2 && _origStW2();
 };
 
-// STEP7 表示時フック
+// STEP8 表示時フック
 const _origStartNav = window.startNavigation;
 window.startNavigation = function() {
   debugLog('=== startNavigation() ===', '#f0883e');
@@ -1938,7 +2002,7 @@ function updatePowerMonitor() {
   });
 }
 
-// STEP7表示中は1秒ごとに更新
+// STEP8表示中は1秒ごとに更新
 function startPowerMonitor() {
   if (_powerMonitorInterval) return;
   updatePowerMonitor();
@@ -1969,7 +2033,7 @@ window.initializeDistanceView = function() {
   }
 };
 
-// updateDistanceAndAzimuth: screen-7のcm表示・緯度経度表示も更新
+// updateDistanceAndAzimuth: screen-8のcm表示・緯度経度表示も更新
 const _origUpdateDA = window.updateDistanceAndAzimuth;
 window.updateDistanceAndAzimuth = function(idx, data) {
   _origUpdateDA(idx, data);
