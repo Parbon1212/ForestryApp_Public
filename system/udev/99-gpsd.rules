@@ -1,0 +1,1 @@
+ACTION=="add", KERNEL=="ttyACM*", ATTRS{idVendor}=="152a", ATTRS{idProduct}=="85c0", RUN+="/bin/systemctl restart gpsd"

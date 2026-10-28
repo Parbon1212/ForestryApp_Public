@@ -1,0 +1,17 @@
+[Unit]
+Description=Power OFF GNSS USB port until all setup completes
+# セットアップ中はGNSSポートを電源OFFにして認識させない。
+# 起動チェーンの先頭（battery-logger より前）で確実にOFFにする。
+DefaultDependencies=no
+After=sysinit.target
+Before=battery-logger.service webapp.service buzzer-startup.service shutdown.target
+Conflicts=shutdown.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+# GNSS = 外付けハブ 1-1 の Port 2（152a:85c0）
+ExecStart=/usr/sbin/uhubctl -e -l 1-1 -p 2 -a off
+
+[Install]
+WantedBy=multi-user.target

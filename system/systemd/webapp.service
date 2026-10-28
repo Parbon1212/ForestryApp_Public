@@ -1,0 +1,14 @@
+[Unit]
+Description=Forest Navigation Web App
+# 起動チェーン: battery-logger の後に、5秒あけて起動（電源スパイク分散）
+After=network.target gpsd.service battery-logger.service
+
+[Service]
+User=ae24iwamoto
+WorkingDirectory=/home/ae24iwamoto/mysite/
+ExecStartPre=/bin/sleep 5
+ExecStart=/usr/bin/python3 /home/ae24iwamoto/mysite/app.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

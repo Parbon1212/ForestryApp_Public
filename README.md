@@ -22,6 +22,19 @@ Raspberry Pi 4 + GNSS 受信機で動作し、スマートフォンのブラウ�
 | `templates/`, `static/` | 画面 |
 | `*Calculation.py`, `TreePlanting.py` | 座標計算 |
 | `gnss_*.sh` | GNSS 受信機の USB 接続管理 |
+| `system/` | systemd サービス・udev ルール（`update.sh` が `/etc` に反映） |
+| `update.sh` | 実機の更新スクリプト |
 | `docs/` | GitHub Pages 用デモ（`python3 tools/build_demo.py` で生成） |
+
+## 実機の更新
+
+Raspberry Pi 上で次を実行します（GitHub アカウント不要）。
+
+```bash
+cd ~/mysite && ./update.sh
+```
+
+最新のコードを取得し、`system/` の設定に変更があれば `/etc` に反映して、webapp を再起動します。
+`/etc/systemd/system` や `/etc/udev/rules.d` の設定を変えたときは、`system/` 側も同じ内容に更新してコミットしてください。
 
 画面を変更したら `python3 tools/build_demo.py` を実行して `docs/` を更新してください。

@@ -1,0 +1,16 @@
+[Unit]
+Description=Power ON GNSS USB port after all setup completes (settle + retry)
+# 全セットアップ完了後、システムが落ち着いてからGNSSを通電し、
+# 認識するまでリトライする（起動時-71対策）。
+After=buzzer-startup.service battery-logger.service webapp.service
+Requires=gnss-usb-off.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+# 起動120秒待ち(最大~105s) + 最大6回*(off6+wait8) を吸収できるよう長めに
+TimeoutStartSec=360
+ExecStart=/home/ae24iwamoto/mysite/gnss_usb_bringup.sh
+
+[Install]
+WantedBy=multi-user.target

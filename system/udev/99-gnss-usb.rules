@@ -1,0 +1,26 @@
+# Septentrio GNSS receiver (152a:85c0)
+# 起動直後は認識させない: 許可フラグ(/run/gnss-usb-allowed)が無い間は authorized=0 にして
+# ドライバ(ACM/RNDIS/マスストレージ)を結合させない。フラグは gnss_usb_bringup.sh が
+# 起動120秒後に作成する（/run なので再起動で消え、毎回ブロックから始まる）。
+ACTION=="add", SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTR{idVendor}=="152a", ATTR{idProduct}=="85c0", TEST!="/run/gnss-usb-allowed", ATTR{authorized}="0", GOTO="gnss_end"
+
+# USBオートサスペンドを無効化
+ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="152a", ATTRS{idProduct}=="85c0", TEST=="power/autosuspend", ATTR{power/autosuspend}="-1"
+
+# ModemManagerの干渉を防ぐ
+ACTION=="add|change", SUBSYSTEM=="usb", ATTRS{idVendor}=="152a", ATTRS{idProduct}=="85c0", ENV{ID_MM_DEVICE_IGNORE}="1"
+
+# NetworkManagerの干渉を防ぐ（RNDISネットIFをudev段階で未管理にマーク）
+ACTION=="add", SUBSYSTEM=="net", DRIVERS=="rndis_host", ATTRS{idVendor}=="152a", ATTRS{idProduct}=="85c0", ENV{NM_UNMANAGED}="1"
+
+# 接続時に診断ログを記録（usb_deviceのみに限定し、インターフェース単位での多重発火を防止）
+ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="152a", ATTRS{idProduct}=="85c0", ENV{DEVTYPE}=="usb_device", RUN+="/bin/bash /home/ae24iwamoto/mysite/gnss_connect_log.sh"
+
+# 切断時に診断ログを記録（remove時はusb_device自身のsysfs属性が既に消えていてDEVTYPE限定だと
+# ATTRS{idVendor}が一致せず発火しないため、限定せず発火させ、重複防止はスクリプト側で行う）
+ACTION=="remove", SUBSYSTEM=="usb", ATTRS{idVendor}=="152a", ATTRS{idProduct}=="85c0", RUN+="/bin/bash /home/ae24iwamoto/mysite/gnss_disconnect_log.sh"
+
+# /dev/gnss シンボリックリンクを作成（インターフェース02 = GPS用メインポート）
+ACTION=="add", SUBSYSTEM=="tty", ATTRS{idVendor}=="152a", ATTRS{idProduct}=="85c0", ENV{ID_USB_INTERFACE_NUM}=="02", SYMLINK+="gnss"
+
+LABEL="gnss_end"
