@@ -741,7 +741,8 @@ function listenOrientation() {
 
 function onOrientation(e) {
   if (e.absolute && e.alpha !== null) {
-    compassHeading = e.alpha;
+    // alphaは反時計回りなので時計回り（webkitCompassHeadingと同じ向き）に変換
+    compassHeading = (360 - e.alpha) % 360;
   } else if (!e.absolute && e.webkitCompassHeading !== undefined) {
     compassHeading = e.webkitCompassHeading;
   }
