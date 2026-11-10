@@ -133,7 +133,7 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 threading.Thread(target=gps_worker, daemon=True).start()
 
 # ==== data download =============================================
-ARRIVAL_CSV = "/home/ae24iwamoto/ae24iwamoto/mysite/data/arrivals.csv"
+ARRIVAL_CSV = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "arrivals.csv")
 
 ARRIVAL_HEADER = [
     "timestamp_iso",

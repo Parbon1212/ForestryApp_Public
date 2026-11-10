@@ -1,0 +1,17 @@
+[Unit]
+Description=ForestryApp first boot (per-device SSH keys / Wi-Fi password / hostname)
+# 配布イメージの初回起動時のみ。SSH と AP が古い鍵・設定で起動する前に実行する。
+ConditionPathExists=/etc/forestryapp-firstboot
+DefaultDependencies=no
+After=local-fs.target systemd-machine-id-commit.service
+RequiresMountsFor=/boot/firmware
+Before=ssh.service hostapd.service avahi-daemon.service network-pre.target
+Wants=network-pre.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=@APP_DIR@/setup/firstboot.sh
+
+[Install]
+WantedBy=multi-user.target

@@ -35,18 +35,26 @@ else
 fi
 
 # --- 2. 設定ファイルの反映 ---
+# system/ のファイル内の @APP_DIR@ / @APP_USER@ を、この Pi の実際の値に置き換えて反映する
+APP_DIR=$(pwd)
+APP_USER=$(id -un)
+render() { sed -e "s|@APP_DIR@|$APP_DIR|g" -e "s|@APP_USER@|$APP_USER|g" "$1"; }
+
 # 引数: コピー元ディレクトリ, 反映先ディレクトリ, パターン
 # 変更があったファイル数を返す（標準出力）
 sync_dir() {
-  local src=$1 dst=$2 pattern=$3 n=0 f
+  local src=$1 dst=$2 pattern=$3 n=0 f tmp
+  tmp=$(mktemp)
   for f in "$src"/$pattern; do
     [ -e "$f" ] || continue
-    if ! cmp -s "$f" "$dst/$(basename "$f")"; then
+    render "$f" > "$tmp"
+    if ! cmp -s "$tmp" "$dst/$(basename "$f")"; then
       log "反映: $dst/$(basename "$f")" >&2
-      sudo install -m 644 "$f" "$dst/"
+      sudo install -m 644 "$tmp" "$dst/$(basename "$f")"
       n=$((n + 1))
     fi
   done
+  rm -f "$tmp"
   echo "$n"
 }
 

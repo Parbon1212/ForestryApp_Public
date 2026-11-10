@@ -4,7 +4,7 @@ Description=Power OFF GNSS USB port until all setup completes
 # 起動チェーンの先頭（battery-logger より前）で確実にOFFにする。
 DefaultDependencies=no
 After=sysinit.target
-Before=battery-logger.service webapp.service buzzer-startup.service shutdown.target
+Before=battery-logger.service webapp.service shutdown.target
 Conflicts=shutdown.target
 
 [Service]

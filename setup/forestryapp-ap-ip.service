@@ -1,0 +1,17 @@
+[Unit]
+Description=ForestryApp AP: assign 10.42.0.1/24 to wlan0
+# hostapd / dnsmasq より先に wlan0 を有効化して固定 IP を付ける。
+# (以前の /etc/rc.local の ifconfig の代わり)
+Wants=sys-subsystem-net-devices-wlan0.device
+After=sys-subsystem-net-devices-wlan0.device NetworkManager.service
+Before=hostapd.service dnsmasq.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=-/usr/sbin/rfkill unblock wlan
+ExecStart=/usr/sbin/ip link set wlan0 up
+ExecStart=/usr/sbin/ip addr replace 10.42.0.1/24 dev wlan0
+
+[Install]
+WantedBy=multi-user.target

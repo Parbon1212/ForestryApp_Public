@@ -1,6 +1,6 @@
 #!/bin/bash
 
-LOG_DIR="/home/ae24iwamoto/mysite/data/gnss_disconnect_logs"
+LOG_DIR="$(dirname "$(readlink -f "$0")")/data/gnss_disconnect_logs"
 mkdir -p "$LOG_DIR"
 
 EVENT_LOG="$LOG_DIR/usb_events.log"

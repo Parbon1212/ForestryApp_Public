@@ -22,8 +22,37 @@ Raspberry Pi 4 + GNSS 受信機で動作し、スマートフォンのブラウ�
 | `templates/`, `static/` | 画面 |
 | `*Calculation.py`, `TreePlanting.py` | 座標計算 |
 | `gnss_*.sh` | GNSS 受信機の USB 接続管理 |
-| `system/` | systemd サービス・udev ルール（`update.sh` が `/etc` に反映） |
+| `system/` | systemd サービス・udev ルール（`update.sh` が `/etc` に反映。`@APP_DIR@` / `@APP_USER@` は設置先に置換される） |
+| `setup.sh`, `setup/` | まっさらな OS への構築（Wi-Fi AP・gpsd・初回起動処理） |
 | `update.sh` | 実機の更新スクリプト |
+| `tools/prepare_image.sh` | 配布用イメージを作る前の掃除 |
+
+## 新しい Pi の構築
+
+Raspberry Pi Imager で **Raspberry Pi OS Lite (64-bit)** を書き込み、ユーザー名は任意（例: `forestry`）、SSH を有効にして起動します。
+
+```bash
+sudo apt install -y git
+git clone https://github.com/Parbon1212/ForestryApp_Public.git ~/mysite
+cd ~/mysite && ./setup.sh
+sudo reboot
+```
+
+起動後、Wi-Fi `ForestryApp-XXXX` に接続して `https://10.42.0.1:5000` を開きます。
+SSID とパスワードは `setup.sh` の最後に表示され、boot パーティションの `forestryapp-wifi.txt` にも保存されます。
+
+## 配布用イメージの作成
+
+1. 上の手順で構築し、GNSS・画面・電源 OFF まで動作確認する
+2. `cd ~/mysite && tools/prepare_image.sh` を実行する（ログイン情報・履歴・鍵・Wi-Fi 設定を消して電源が切れる）
+3. SD を PC に挿してイメージを吸い出し、[PiShrink](https://github.com/Drewsif/PiShrink) などで縮小する
+4. 書き込んだ SD を初めて起動すると、端末ごとに SSH 鍵・Wi-Fi パスワード・ホスト名が作られる。
+   SD を PC に挿して `forestryapp-wifi.txt` を読み、本体にラベルを貼って配布する
+
+`forestryapp-wifi.txt` を初回起動の前に自分で書いておく（`SSID=...` / `PASSWORD=...`）と、その値が使われます。
+ログインパスワードは初回 SSH ログイン時に変更を求められます。
+
+> 開発に使っている Pi で `prepare_image.sh` を実行しないでください。
 | `docs/` | GitHub Pages 用デモ（`python3 tools/build_demo.py` で生成） |
 
 ## 実機の更新
